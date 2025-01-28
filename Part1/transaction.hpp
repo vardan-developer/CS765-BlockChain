@@ -13,9 +13,9 @@ struct Transaction {
     std::vector<txnId> utxos;
     minerId sender;
     minerId receiver;
-    int amount;
+    uint64_t amount;
     TransactionType type;
-    Transaction(txnId id, std::vector<txnId> utxos, minerId sender, minerId receiver, int amount, TransactionType type):
+    Transaction(txnId id, std::vector<txnId> utxos, minerId sender, minerId receiver, uint64_t amount, TransactionType type):
         id(id),
         utxos(utxos),
         sender(sender),
