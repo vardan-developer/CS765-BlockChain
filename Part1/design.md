@@ -39,7 +39,7 @@ This document outlines the design for a blockchain node simulation where each no
 
 ### 3. **Data Structures**
 
-#### **Block Structure**
+#### **Block Structure** > Done
 - Represents a block in the blockchain.
 - Includes:
   - Block ID

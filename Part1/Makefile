@@ -1,4 +1,4 @@
 all:
-	g++ -o sim main.cpp
+	g++ -o sim utils.cpp main.cpp 
 clean:
 	rm sim

@@ -1,7 +1,5 @@
 #include <iostream>
-#include <vector>
-#include <queue>
-#include "miner.h"
+#include "miner.hpp"
 
 int main() {
     

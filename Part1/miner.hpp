@@ -1,7 +1,8 @@
 #ifndef MINER_H
 #define MINER_H
 
-#include "event.h"
+#include "event.hpp"
+#include "utils.hpp"
 
 class Miner {
 
