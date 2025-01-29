@@ -110,6 +110,28 @@ When a miner receives a block, it processes it as follows:
    - Schedule broadcast events for remaining peers.
    - Update the block-to-pointer map for efficient future lookups.
 
+### **Algorithm for network graph generation**
+1. **Input Validation**:
+   - If `n < 5`, exit (impossible to satisfy degree ≥ 4).
+   - If `n = 5`, return the complete graph `K₅` (all nodes have degree 4).
+
+2. **Base Graph Construction**:
+   - Generate a **4-regular connected graph** (each node has degree 4) using the *configuration model*:
+     - Create `4n` "stubs" (half-edges) across all nodes.
+     - Randomly pair stubs to form edges, avoiding self-loops and duplicates.
+     - Repeat until the graph is connected.
+
+3. **Random Edge Augmentation**:
+   - Collect all non-existent edges in a list and shuffle it.
+   - Iterate through the shuffled edges:
+     - Add an edge `(u, v)` if both `u` and `v` have degree < 5.
+     - Stop when no more edges can be added.
+
+4. **Output**:
+   - Return the adjacency list/matrix of the graph.
+
+
+
 ---
 
 ## Modular Design
