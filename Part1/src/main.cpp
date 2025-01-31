@@ -1,0 +1,7 @@
+#include <iostream>
+#include "miner.hpp"
+
+int main() {
+    
+    return 0;
+}

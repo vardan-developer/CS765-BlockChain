@@ -30,13 +30,13 @@ double getUniformRandom(double a, double b) {
     return distribution(gen);
 }
 
-bool is_connected(const vector<unordered_set<int> >  &adj)
+bool is_connected(const std::vector<std::unordered_set<int> >  &adj)
 {
     int n = adj.size();
     if (n == 0)
         return true;
-    vector<bool> visited(n, false);
-    queue<int> q;
+    std::vector<bool> visited(n, false);
+    std::queue<int> q;
     q.push(0);
     visited[0] = true;
     int count = 1;
@@ -57,15 +57,15 @@ bool is_connected(const vector<unordered_set<int> >  &adj)
     return count == n;
 }
 
-vector<unordered_set<int> > generate_graph(int n)
+std::vector<std::unordered_set<int> > generate_graph(int n)
 {
     if (n < 5)
     {
-        throw invalid_argument("n must be at least 5");
+        throw std::invalid_argument("n must be at least 5");
     }
     if (n == 5)
     {
-        vector<unordered_set<int> > adj(5);
+        std::vector<std::unordered_set<int> > adj(5);
         for (int i = 0; i < 5; ++i)
         {
             for (int j = 0; j < 5; ++j)
@@ -79,9 +79,9 @@ vector<unordered_set<int> > generate_graph(int n)
         return adj;
     }
 
-    vector<unordered_set<int> > adj(n);
-    random_device rd;
-    mt19937 rng(rd());
+    std::vector<std::unordered_set<int> > adj(n);
+    std::random_device rd;
+    std::mt19937 rng(rd());
 
     // Step 1: Create 4-regular connected graph
     bool connected = false;
@@ -94,7 +94,7 @@ vector<unordered_set<int> > generate_graph(int n)
         }
 
         // Create stubs
-        vector<int> stubs;
+        std::vector<int> stubs;
         for (int i = 0; i < n; ++i)
         {
             for (int j = 0; j < 4; ++j)
@@ -123,7 +123,7 @@ vector<unordered_set<int> > generate_graph(int n)
     }
 
     // Step 2: Add edges to reach degree 5 where possible
-    vector<pair<int, int> > possible_edges;
+    std::vector<std::pair<int, int> > possible_edges;
     for (int u = 0; u < n; ++u)
     {
         for (int v = u + 1; v < n; ++v)
@@ -135,7 +135,7 @@ vector<unordered_set<int> > generate_graph(int n)
         }
     }
 
-    shuffle(possible_edges.begin(), possible_edges.end(), rng);
+    std::shuffle(possible_edges.begin(), possible_edges.end(), rng);
 
     for (const auto &[u, v] : possible_edges)
     {
