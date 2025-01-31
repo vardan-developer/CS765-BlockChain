@@ -48,7 +48,7 @@ This document outlines the design for a blockchain node simulation where each no
   - Transactions
   - Timestamp
 
-#### **Transaction Structure**
+#### **Transaction Structure** > Done
 - Represents a transaction within a block.
 - Includes:
   - Sender
