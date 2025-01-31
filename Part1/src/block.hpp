@@ -10,6 +10,9 @@ struct Block {
     std::vector<Transaction> transactions;
     time_t timestamp;
 
+
+    Block();
+
     Block(blockId_t id, uint64_t height, blockId_t parent_id, std::vector<Transaction> transactions, time_t timestamp):
         id(id),
         height(height),
@@ -25,9 +28,11 @@ struct Block {
         timestamp(timestamp)
     {}
 
-    bool operator < (const Block& other) const {
-        return id < other.id;
-    }
+    Block(const Block & other);
+
+    Block & operator=(const Block & other);
+
+    bool operator < (const Block& other) const;
 };
 
 #endif

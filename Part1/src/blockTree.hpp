@@ -47,7 +47,7 @@ class BlockTree {
             3) Returns the height of the chain if the block can be added to the chain
             4) Updates the current chain to the new longest chain
         */
-        int addBlock(const Block block);
+        int addBlock(const Block block, time_t arrivalTime);
 
         void printTree(std::string filename) const;
         void printChain(BlockTreeNode* node /* The bottom of the chain */) const; /* Prints the chain from the bottom to the genesis */

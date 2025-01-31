@@ -1,4 +1,3 @@
-#include <iostream>
 #include "miner.hpp"
 
 int main() {

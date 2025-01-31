@@ -113,7 +113,7 @@ void BlockTree::printTree(std::string filename) const {
 }
 
 void BlockTree::printSubTree(BlockTreeNode* node, std::ofstream & file) const {
-    file << "( " << node->block. << " " << node->arrivalTime << std::endl;
+    file << "( " << node->block.id << " " << node->arrivalTime << std::endl;
     for (BlockTreeNode* child : node->children) {
         printSubTree(child, file);
     }
@@ -122,15 +122,15 @@ void BlockTree::printSubTree(BlockTreeNode* node, std::ofstream & file) const {
 
 void BlockTree::printChain(BlockTreeNode* node) const {
     while (node) {
-        std::cout << node->block. << std::endl;
+        std::cout << node->block.id << std::endl;
         node = node->parent;
     }
 }
 
-void BlockTree::validateChain() {
+bool BlockTree::validateChain(BlockTreeNode* node) const {
 
 }
 
-void BlockTree::addBlock(const Block & block, time_t arrivalTime) {
+int BlockTree::addBlock(const Block block, time_t arrivalTime) {
     
 }
