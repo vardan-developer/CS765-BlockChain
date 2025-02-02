@@ -213,6 +213,35 @@ int BlockTree::addBlock(const Block block, time_t arrivalTime) {
     return this->current->height;
 }
 
+void BlockTree::exportToDot(const std::string & filename) const {
+    std::ofstream file(filename);
+    if(!file.is_open()){
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return;
+    }
+    file << "digraph BlockchainTree {\n";
+    file << " node [shape=block];\n";
+
+    std::function<void(BlockTreeNode*)> traverse = [&](BlockTreeNode* node) {
+        if (!node) return;
+
+        file << "    \"" << node->block.id << "\" [label=\"Block " << node->block.id 
+             << "\\nHeight: " << node->height 
+             << "\\nTimestamp: " << node->arrivalTime << "\"];\n";
+
+        for (BlockTreeNode* child : node->children) {
+            file << "    \"" << node->block.id << "\" -> \"" << child->block.id << "\";\n";
+            traverse(child);
+        }
+    };
+
+    traverse(genesis); // Start from the genesis block
+    file << "}\n";
+    file.close();
+
+    std::cout << "DOT file saved: " << filename << std::endl;
+}
+
 bool BlockTree::verifyUtxo(Utxo & utxo) const {
     BlockTreeNode * utxoBlock = blockIdToNode.at(utxo.block);
     Transaction * utxoTransaction = & *std::find_if(utxoBlock->block.transactions.begin(), utxoBlock->block.transactions.end(), [&utxo](Transaction & txn) { return txn.id == utxo.txn; });
