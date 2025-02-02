@@ -93,7 +93,7 @@ std::vector<std::vector<int> > generate_graph(int n) {
         shuffle(stubs.begin(), stubs.end(), std::mt19937(std::random_device()()));
 
         std::vector<std::vector<int> > adj(n);
-        std::unordered_set<std::pair<int, int> > edges;
+        std::unordered_set<std::pair<int, int>, pair_hash> edges;
         bool valid = true;
 
         for (size_t i = 0; i < stubs.size(); i += 2) {
