@@ -7,6 +7,9 @@
 #include <iostream>
 #include <fstream>
 #include <stack>
+#include <unordered_map>
+#include <algorithm>
+#include <numeric>
 
 using txnId_t = uint64_t;
 using minerId_t = uint64_t;

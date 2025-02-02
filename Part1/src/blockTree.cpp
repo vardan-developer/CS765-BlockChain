@@ -28,19 +28,16 @@ BlockTreeNode & BlockTreeNode::operator=(const BlockTreeNode & other) {
 BlockTree::BlockTree() {
     genesis = nullptr;
     current = nullptr;
-    currentHeight = 0;
 }
 
 BlockTree::BlockTree(const Block & genesisBlock, time_t arrivalTime) {
     genesis = new BlockTreeNode(genesisBlock, arrivalTime);
     current = genesis;
-    currentHeight = 0;
 }
 
 BlockTree::BlockTree(const BlockTree & other) {
     genesis = new BlockTreeNode(*other.genesis);
     current = genesis;
-    currentHeight = other.currentHeight;
 }
 
 BlockTree & BlockTree::operator=(const BlockTree & other) {
@@ -49,17 +46,14 @@ BlockTree & BlockTree::operator=(const BlockTree & other) {
     }
     genesis = new BlockTreeNode(*other.genesis);
     current = genesis;
-    currentHeight = other.currentHeight;
     return *this;
 }
 
 BlockTree::BlockTree(BlockTree && other) {
     genesis = other.genesis;
     current = other.current;
-    currentHeight = other.currentHeight;
     other.genesis = nullptr;
     other.current = nullptr;
-    other.currentHeight = 0;
 }
 
 BlockTree & BlockTree::operator=(BlockTree && other) {
@@ -68,10 +62,8 @@ BlockTree & BlockTree::operator=(BlockTree && other) {
     }
     genesis = other.genesis;
     current = other.current;
-    currentHeight = other.currentHeight;
     other.genesis = nullptr;
     other.current = nullptr;
-    other.currentHeight = 0;
     return *this;
 }
 
@@ -89,7 +81,11 @@ BlockTree::~BlockTree() {
 }
 
 Block BlockTree::getCurrent() const {
-    return current->block;
+    return this->current->block;
+}
+
+int BlockTree::getCurrentHeight() const {
+    return this->current->height;
 }
 
 BlockTreeNode* BlockTree::findLCA(BlockTreeNode* node1, BlockTreeNode* node2) const {
@@ -127,10 +123,92 @@ void BlockTree::printChain(BlockTreeNode* node) const {
     }
 }
 
-bool BlockTree::validateChain(BlockTreeNode* node) const {
+bool BlockTree::validateChain(BlockTreeNode* node, std::vector<Utxo *> utxosUsedByNewNode) const {
 
+    // Verifying each transaction
+    for ( Transaction & transaction : node->block.transactions ) {
+
+        // Sum of input utxo amount is not equal to sum of output utxo amount
+        if ( ! transaction.isBalanceConsistent() ) {
+            std::cout << "The block contains inconsistent transaction\n";
+            return false;
+        }
+
+        // Verifying each input Utxos used in the transaction
+        for ( Utxo & utxo : transaction.in_utxos ) {
+
+            // Block containing the utxo is not in our blockchain
+            if ( blockIdToNode.find(utxo.block) == blockIdToNode.end() ) {
+                std::cout << "The block of the utxo which the new transaction claims to use is not present in our blockchain\n";
+                return false;
+            }
+
+            // Getting the block object of the utxo
+            Block & prevUtxoBlock = (blockIdToNode.at(utxo.block))->block;
+
+            // Finding the transaction of the utxo
+            Transaction * prevUtxoTransaction = & *std::find_if(prevUtxoBlock.transactions.begin(), prevUtxoBlock.transactions.end(), [&utxo](Transaction & txn) { return txn.id == utxo.txn; });       // TODO: Does this actually capture the transaction stored in the actual blockchain OR points to just a copy
+
+            // Actually finding the Utxo the node claims to use
+            Utxo * prevUtxo = & prevUtxoTransaction->out_utxos[utxo.index];
+
+            // Verify if given utxo object is consistent with the stored utxo object
+            if ( *prevUtxo == utxo ) {
+                return false;
+            }
+
+            // Iterating over all the blocks which are using this utxo and verifying if these are not ancestor of the new node
+            for ( blockId_t & blockConsumingUtxo : prevUtxo->consumedBy ) {
+
+                // Cannot find the block in our blockchain
+                // This also takes care if our block tries to use the same utxo multiple times
+                if ( blockIdToNode.find(blockConsumingUtxo) == blockIdToNode.end() ) {
+                    std::cout << "Something horribly wrong went down\n";
+                    return false;
+                }
+                if ( blockIdToNode.at(blockConsumingUtxo) == this->findLCA(node, blockIdToNode.at(blockConsumingUtxo)) ) {
+                    // Invalid transaction as utxo used by an ancestor                    
+                    return false;
+                }
+            }
+
+            // Registering the new block as one of the consumers of this Utxo
+            prevUtxo->consumedBy.push_back(node->block.id);
+
+            // Bookkeeping for roolback purposes
+            utxosUsedByNewNode.push_back(prevUtxo);
+        }
+    }
+    return true;
 }
 
 int BlockTree::addBlock(const Block block, time_t arrivalTime) {
-    
+
+    // Making a Tree Node object for our new block
+    BlockTreeNode * blockTreeNode = new BlockTreeNode (block, arrivalTime);
+    BlockTreeNode * parentBlock = blockIdToNode[block.parent_id];
+    blockTreeNode->parent = parentBlock;
+    blockTreeNode->height = parentBlock->height + 1;
+    std::vector<Utxo *> utxosUsedByNewNode;
+
+    if ( this->validateChain(blockTreeNode, utxosUsedByNewNode) ) {
+        // Registering the new node in mappings
+        blockIdToNode[blockTreeNode->block.id] = blockTreeNode;
+        parentBlock->children.push_back(blockTreeNode);
+        std::cout << "Block added succesfully in blockchain!\n";
+    } else {
+        for ( Utxo * prevAcceptedUtxo : utxosUsedByNewNode ) {
+            prevAcceptedUtxo->consumedBy.pop_back();
+        }
+        delete blockTreeNode;
+        std::cout << "Block rejected from blockchain!\n";
+        return -1;
+    }
+
+    // Updating current head of blockchain
+    if ( blockTreeNode->height > this->current->height ) {
+        this->current = blockTreeNode;
+    }
+
+    return this->current->height;
 }
