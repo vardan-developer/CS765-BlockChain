@@ -7,7 +7,7 @@ struct Block {
     blockId_t id;
     uint64_t height;
     blockId_t parent_id;
-    std::vector<Transaction> transactions;
+    std::vector<Transaction> transactions;      // Remember to call transactions.shrink_to_fit() after adding all required transactions to reduce block size
     time_t timestamp;
 
 
@@ -33,6 +33,8 @@ struct Block {
     Block & operator=(const Block & other);
 
     bool operator < (const Block& other) const;
+
+    size_t dataSize() const;
 };
 
 #endif

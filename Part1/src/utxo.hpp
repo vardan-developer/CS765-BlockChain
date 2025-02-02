@@ -28,6 +28,10 @@ struct Utxo
                (owner == other.owner) &&
                (amount == other.amount);
     }
+
+    size_t dataSize() const {
+        return sizeof(Utxo) + consumedBy.capacity() * sizeof(blockId_t);
+    }
 };
 
 

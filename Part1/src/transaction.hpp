@@ -18,6 +18,7 @@ struct Transaction {
     {}
     int amount() const;
     bool isBalanceConsistent() const;
+    size_t dataSize() const;
 };
 
 #endif

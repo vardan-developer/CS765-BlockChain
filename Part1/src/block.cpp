@@ -28,3 +28,7 @@ Block & Block::operator=(const Block & other) {
 bool Block::operator < (const Block& other) const {
     return id < other.id;
 }
+
+size_t Block::dataSize() const {
+    return sizeof(Block) + std::accumulate(transactions.begin(), transactions.end(), (size_t) 0, [](int sum, Transaction & txn) { return sum + txn.dataSize(); });
+}

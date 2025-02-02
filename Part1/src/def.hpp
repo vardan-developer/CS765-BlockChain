@@ -15,4 +15,6 @@ using txnId_t = uint64_t;
 using minerId_t = uint64_t;
 using blockId_t = uint64_t;
 
+const int MB = 1000000;
+
 #endif
