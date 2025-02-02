@@ -215,7 +215,9 @@ void Miner::addEvent(Event &event){
 }
 
 std::vector<Event> Miner::getEventList(time_t timestamp){
-    eventList.insert(eventList.end(), generateBlock(timestamp).begin(), generateBlock(timestamp).end());
-    eventList.insert(eventList.end(), generateTransaction(timestamp).begin(), generateTransaction(timestamp).end());
+    std::vector<Event> newEvents = generateBlock(timestamp);
+    eventList.insert(eventList.end(), newEvents.begin(), newEvents.end());
+    newEvents = generateTransaction(timestamp);
+    eventList.insert(eventList.end(), newEvents.begin(), newEvents.end());
     return eventList;
 }

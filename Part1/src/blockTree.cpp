@@ -212,3 +212,21 @@ int BlockTree::addBlock(const Block block, time_t arrivalTime) {
 
     return this->current->height;
 }
+
+bool BlockTree::verifyUtxo(Utxo & utxo) const {
+    BlockTreeNode * utxoBlock = blockIdToNode.at(utxo.block);
+    Transaction * utxoTransaction = & *std::find_if(utxoBlock->block.transactions.begin(), utxoBlock->block.transactions.end(), [&utxo](Transaction & txn) { return txn.id == utxo.txn; });
+    Utxo * storedUtxo = & utxoTransaction->out_utxos[utxo.index];
+    if ( * storedUtxo != utxo ) {
+        return false;
+    }
+    if ( utxoBlock == this->findLCA(utxoBlock, this->current) || this->current == this->findLCA(utxoBlock, this->current) ) {
+        return false;
+    }
+    for ( auto blockConsumingUtxo : storedUtxo->consumedBy ) {
+        if ( utxoBlock == this->findLCA(utxoBlock, blockIdToNode.at(blockConsumingUtxo)) || blockIdToNode.at(blockConsumingUtxo) == this->findLCA(utxoBlock, blockIdToNode.at(blockConsumingUtxo)) ) {
+            return false;
+        }
+    }
+    return true;
+}

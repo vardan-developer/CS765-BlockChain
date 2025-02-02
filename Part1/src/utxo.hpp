@@ -29,6 +29,10 @@ struct Utxo
                (amount == other.amount);
     }
 
+    bool operator != (const Utxo & other) const {
+        return !(*this == other);
+    }
+
     size_t dataSize() const {
         return sizeof(Utxo) + consumedBy.capacity() * sizeof(blockId_t);
     }

@@ -55,7 +55,7 @@ class BlockTree {
         void printTree(std::string filename) const;
         void printChain(BlockTreeNode* node /* The bottom of the chain */) const; /* Prints the chain from the bottom to the genesis */
 
-        bool verifyUtxo(Utxo utxo) const;
+        bool verifyUtxo(Utxo & utxo) const;
 
 
 };
