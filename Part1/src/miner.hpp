@@ -15,9 +15,9 @@ class Miner {
         int currentHeight;
         int amount;
         Block * currentScheduledBlock; //Block which is scheduled on main thread
-        std::vector<Utxo> unspentUtxos;
+        std::queue<Utxo> unspentUtxos;
         std::vector<minerId_t> neighbours;
-        std::map<blockId_t, std::set<minerId_t>> blockToMiners;
+        std::map<blockId_t, std::set<minerId_t> > blockToMiners;
 
         /*
         std::vector<Event> receiveEvent(Event):- Can receive events of type:

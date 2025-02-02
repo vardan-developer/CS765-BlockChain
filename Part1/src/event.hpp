@@ -22,22 +22,22 @@ struct Event {
     time_t timestamp;       // Time when this event will be processed
     minerId_t owner;
 
-    Event(EventType type, const Block & block, time_t timestamp, minerId_t owner):
+    Event(EventType type, const Block*  block, time_t timestamp, minerId_t owner):
         type(type),
         transaction(nullptr),
         timestamp(timestamp),
         owner(owner)
     {
-        this->block = new Block(block);
+        this->block = new Block(*block);
     }
 
-    Event(EventType type, const Transaction & transaction, time_t timestamp, minerId_t owner):
+    Event(EventType type, const Transaction*  transaction, time_t timestamp, minerId_t owner):
         type(type),
         block(nullptr),
         timestamp(timestamp),
         owner(owner)
     {
-        this->transaction = new Transaction(transaction);
+        this->transaction = new Transaction(*transaction);
     }
 
     Event(const Event & other) {

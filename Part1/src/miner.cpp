@@ -9,7 +9,7 @@ Miner::Miner(int id, double hashPower, std::vector<minerId_t> neighbours)
     this->currentHeight = 0;
     this->amount = 0;
     this->currentScheduledBlock = nullptr;
-    this->unspentUtxos = std::vector<Utxo>();
+    this->unspentUtxos = std::queue<Utxo>();
     this->neighbours = neighbours;
 }
 
@@ -36,18 +36,18 @@ std::vector<Event> Miner::receiveEvent(Event &event)
 std::vector<Event> Miner::confirmBlock(Event &event)
 {
     int height = blockTree.getCurrentHeight();
-    if (!currentScheduleBlock || *currentScheduledBlock != *Event.block || Event.block->height <= height)
+    if (!currentScheduledBlock || *currentScheduledBlock != *event.block || event.block->height <= height) // TODO: implement != operator for block
     {
         return std::vector<Event>();
     }
-    currentBlock = *Event.block;
+    currentBlock = *event.block;
     for(auto txn : currentBlock.transactions){
         if(memPool.find(txn) != memPool.end()){
             memPool.erase(txn);
         }
 
     }
-    blockTree.addBlock(*Event.block, Event.timestamp);
+    blockTree.addBlock(*event.block, event.timestamp);
     return std::vector<Event>{event};
 }
 
@@ -71,22 +71,12 @@ std::vector<Event> Miner::generateBlock(time_t prev_time)
 
     // Add random transactions to the block
     int num_txns = getUniformRandom(1, std::min((int)memPool.size(), 100));
-    std::uniform_int_distribution<int> indexDist(0, memPool.size() - 1);
-    while (currentScheduledBlock->transactions.size() < num_samples + 1 && currentScheduledBlock->dataSize() < MB)
-    {
-        int randIndex = indexDist(gen);
-        auto it = std::next(memPool.begin(), randIndex);
-        if (currentScheduledBlock->dataSize() + it->dataSize() > MB)
-        {
-            break;
+    for(int i = 0; i < num_txns; i++){
+        currentScheduledBlock->transactions.push_back(*(memPool.begin()));
+        for(Utxo& utxo : currentScheduledBlock->transactions.back().out_utxos){
+            utxo.block = scheduledBlockID;
         }
-        if (std::find(currentScheduledBlock->transactions.begin(), currentScheduledBlock->transactions.end(), *it) == currentScheduledBlock->transactions.end())
-        {
-            for(auto& utxo : it->out_utxos){
-                utxo.blockID = scheduledBlockID;
-            }
-            currentScheduledBlock->transactions.push_back(*it);
-        }
+        memPool.erase(memPool.begin());
     }
 
     return std::vector<Event>{Event(EventType::BROADCAST_BLOCK, currentScheduledBlock, scheduleTime, id)};
@@ -108,24 +98,28 @@ std::vector<Event> Miner::generateTransaction(time_t prev_time)
     while((paymentReceiver = getUniformRandom(1, NUM_MINERS)) == id);
 
     int currentAmount = 0;
-    for(auto it = unspentUtxos.begin(); it != unspentUtxos.end(); ){
-        if(currentAmount < paymentAmount){
-            in_utxos.push_back(*it);
-            currentAmount += it->amount;
-            it = unspentUtxos.erase(it);
+    
+    while(currentAmount < paymentAmount){
+        
+        for (int i = 0; i < unspentUtxos.size() and !blockTree.verifyUtxo(unspentUtxos.front()); i++) { // TODO: implement verifyUtxo function
+            unspentUtxos.push(unspentUtxos.front());
+            unspentUtxos.pop();
         }
-        else{
-            break;
-        }
+        
+        in_utxos.push_back(unspentUtxos.front());
+        currentAmount += unspentUtxos.front().amount;
+        unspentUtxos.pop();
     }
-
+    amount -= currentAmount;
     out_utxos.push_back(Utxo(-1, txnID, 0, paymentReceiver, paymentAmount));
     if(currentAmount > paymentAmount){
         out_utxos.push_back(Utxo(-1, txnID, 1, id, currentAmount - paymentAmount));
     }
 
     Transaction txn = Transaction(txnID, in_utxos, out_utxos, TransactionType::NORMAL);
-    return std::vector<Event>{Event(EventType::BROADCAST_TRANSACTION, txn, scheduleTime, id)};
+    std::vector<Event> newEvents;
+    newEvents.push_back(Event(EventType::BROADCAST_TRANSACTION, &txn, scheduleTime, id));
+    return newEvents;
 }
 
 std::vector<Event> Miner::receiveBroadcastBlock(Event &event)
@@ -142,7 +136,7 @@ std::vector<Event> Miner::receiveBroadcastBlock(Event &event)
         currentScheduledBlock = nullptr;
         currentBlock = *event.block;
         currentHeight = blockTree.getCurrentHeight();
-        newEvents.push_back(generateBlock(event.timestamp));
+        newEvents.push_back(generateBlock(event.timestamp)[0]);
     }
     for(auto peer: neighbours){
         if(blockToMiners[event.block->id].find(peer) == blockToMiners[event.block->id].end()){

@@ -32,6 +32,10 @@ struct Block {
 
     Block & operator=(const Block & other);
 
+    bool operator==(const Block & other) const; // TODO: implement == operator for block
+
+    bool operator!=(const Block & other) const; // TODO: implement != operator for block
+
     bool operator < (const Block& other) const;
 
     size_t dataSize() const;

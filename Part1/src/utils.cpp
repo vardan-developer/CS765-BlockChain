@@ -1,6 +1,19 @@
 #include "utils.hpp"
 #include <iostream>
 
+// Add these definitions before the Counter methods
+blockId_t Counter::blockIDCount = 0;
+txnId_t Counter::txnIDCount = 0;
+
+blockId_t Counter::getBlockID(){
+    return blockIDCount++;
+}
+
+txnId_t Counter::getTxnID(){
+    return txnIDCount++;
+}
+
+
 double getExponentialRandom(double mean) {
     if (mean <= 0) {
         throw std::invalid_argument("Mean must be greater than zero.");
@@ -177,18 +190,3 @@ std::vector<std::vector<int> > generate_graph(int n) {
 
     return adj;
 }
-
-class Counter{
-    private:
-        static blockId_t blockIDCount;
-        static  txnId_t txnIDCount;
-
-    public:
-        static blockId_t getBlockID(){
-            return blockIDCount++;
-        }
-
-        static txnId_t getTxnID(){
-            return txnIDCount++;
-        }
-};

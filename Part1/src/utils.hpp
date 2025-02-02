@@ -15,4 +15,14 @@ struct pair_hash {
     }
 };
 
+class Counter {
+public:
+    static blockId_t getBlockID();
+    static txnId_t getTxnID();
+    
+private:
+    static blockId_t blockIDCount;  // Declaration
+    static txnId_t txnIDCount;      // Declaration
+};
+
 #endif
