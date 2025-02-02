@@ -25,7 +25,7 @@ class BlockTree {
         /*
             Validates that all transactions in the chain are consistent
         */
-        bool validateChain(BlockTreeNode* node /* The bottom of the chain */, std::vector<Utxo *> utxosUsedByNewNode) const;
+        bool validateChain(BlockTreeNode* node /* The bottom of the chain */, std::vector<Utxo *> & utxosUsedByNewNode) const;
 
         BlockTreeNode* findLCA(BlockTreeNode* node1, BlockTreeNode* node2) const;
         void printSubTree(BlockTreeNode* node, std::ofstream & file) const;

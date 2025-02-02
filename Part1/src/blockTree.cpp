@@ -123,7 +123,7 @@ void BlockTree::printChain(BlockTreeNode* node) const {
     }
 }
 
-bool BlockTree::validateChain(BlockTreeNode* node, std::vector<Utxo *> utxosUsedByNewNode) const {
+bool BlockTree::validateChain(BlockTreeNode* node, std::vector<Utxo *> & utxosUsedByNewNode) const {
 
     // Verifying each transaction
     for ( Transaction & transaction : node->block.transactions ) {
