@@ -11,6 +11,7 @@ Miner::Miner(int id, double hashPower, std::vector<minerId_t> neighbours)
     this->currentScheduledBlock = nullptr;
     this->unspentUtxos = std::queue<Utxo>();
     this->neighbours = neighbours;
+    this->currentScheduledTransactionTime = 0;
 }
 
 std::vector<Event> Miner::receiveEvent(Event &event)
@@ -22,10 +23,6 @@ std::vector<Event> Miner::receiveEvent(Event &event)
         return receiveBroadcastTransaction(event);
     case EventType::RECEIVE_BROADCAST_BLOCK:
         return receiveBroadcastBlock(event);
-    case EventType::BROADCAST_BLOCK:
-        return generateBlock(event.timestamp);
-    case EventType::BROADCAST_TRANSACTION:
-        return generateTransaction(event.timestamp);
     case EventType::BLOCK_CREATION:
         return confirmBlock(event);
     default:
@@ -53,6 +50,11 @@ std::vector<Event> Miner::confirmBlock(Event &event)
 
 std::vector<Event> Miner::generateBlock(time_t prev_time)
 {
+    if ( currentScheduledBlock != nullptr )
+    {
+        return std::vector<Event>();
+    }
+
     currentScheduledBlock = nullptr;
     time_t scheduleTime = prev_time + getExponentialRandom(BLOCK_INTER_ARRIVAL_TIME / hashPower);
 
@@ -84,7 +86,11 @@ std::vector<Event> Miner::generateBlock(time_t prev_time)
 
 std::vector<Event> Miner::generateTransaction(time_t prev_time)
 {
-    if(amount == 0){
+    if (prev_time < currentScheduledTransactionTime)
+    {
+        return std::vector<Event>();
+    }
+    if(amount <= 0){
         return std::vector<Event>();
     }
     time_t scheduleTime = prev_time + getExponentialRandom(TXN_INTER_ARRIVAL_TIME);
@@ -132,11 +138,51 @@ std::vector<Event> Miner::receiveBroadcastBlock(Event &event)
         return newEvents;
     }
 
+    for (auto txn: event.block->transactions){
+        for (auto utxo: txn.out_utxos){
+            if (utxo.owner == id) unspentUtxos.push(utxo);
+        }
+    }
+
     if(blockTree.getCurrentHeight() > currentHeight){
+        // TODO: Add back transactions to mempool
+        for (auto txn: currentScheduledBlock->transactions){
+            memPool.insert(txn);
+        }
+        
+        BlockTreeNode * node1 = blockTree.blockIdToNode[currentBlock.id];
+        BlockTreeNode * node2 = blockTree.blockIdToNode[event.block->id];
+
+
+        while ( node1->height > node2->height ) {
+            for (auto txn: node1->block.transactions){
+                memPool.insert(txn);
+            }
+            node1 = node1->parent;
+        }
+
+        while ( node2->height > node1->height ) {
+            for (auto txn: node2->block.transactions){
+                memPool.erase(txn);
+            }
+            node2 = node2->parent;
+        }
+        
+        while ( node1 != node2 ) {
+            for (auto txn: node1->block.transactions){
+                memPool.insert(txn);
+            }
+            for (auto txn: node2->block.transactions){
+                memPool.erase(txn);
+            }
+            node1 = node1->parent;
+            node2 = node2->parent;
+        }
+
         currentScheduledBlock = nullptr;
         currentBlock = *event.block;
         currentHeight = blockTree.getCurrentHeight();
-        newEvents.push_back(generateBlock(event.timestamp)[0]);
+        newEvents.insert(newEvents.end(), generateBlock(event.timestamp).begin(), generateBlock(event.timestamp).end());
     }
     for(auto peer: neighbours){
         if(blockToMiners[event.block->id].find(peer) == blockToMiners[event.block->id].end()){
@@ -147,3 +193,29 @@ std::vector<Event> Miner::receiveBroadcastBlock(Event &event)
     return newEvents;
 }
 
+
+std::vector<Event> Miner::receiveBroadcastTransaction(Event &event){
+    memPool.insert(*event.transaction);
+    blockToTransactions[event.block->id].insert(event.transaction->id);
+
+    std::vector<Event> newEvents;
+
+    for (auto peer: neighbours){
+        if(blockToMiners[event.block->id].find(peer) == blockToMiners[event.block->id].end()){
+            blockToMiners[event.block->id].insert(peer);
+            newEvents.push_back(Event(EventType::SEND_BROADCAST_TRANSACTION, event.transaction, event.timestamp, id));
+        }
+    }
+
+    return newEvents;
+}
+
+void Miner::addEvent(Event &event){
+    eventList.push_back(event);
+}
+
+std::vector<Event> Miner::getEventList(time_t timestamp){
+    eventList.insert(eventList.end(), generateBlock(timestamp).begin(), generateBlock(timestamp).end());
+    eventList.insert(eventList.end(), generateTransaction(timestamp).begin(), generateTransaction(timestamp).end());
+    return eventList;
+}

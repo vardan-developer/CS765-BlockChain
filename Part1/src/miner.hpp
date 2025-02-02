@@ -15,9 +15,13 @@ class Miner {
         int currentHeight;
         int amount;
         Block * currentScheduledBlock; //Block which is scheduled on main thread
+        time_t currentScheduledTransactionTime;
         std::queue<Utxo> unspentUtxos;
         std::vector<minerId_t> neighbours;
-        std::map<blockId_t, std::set<minerId_t> > blockToMiners;
+        std::unordered_map<blockId_t, std::set<minerId_t> > blockToMiners;
+        std::unordered_map<blockId_t, std::set<minerId_t> > blockToTransactions;
+
+        std::vector<Event> eventList;
 
         /*
         std::vector<Event> receiveEvent(Event):- Can receive events of type:
@@ -35,6 +39,8 @@ class Miner {
     public:
         Miner(int id, double hashPower, std::vector<minerId_t> neighbours);
         std::vector<Event> receiveEvent(Event &event);
+        std::vector<Event> getEventList(time_t timestamp);
+        void addEvent(Event &event);
 };
 
 #endif

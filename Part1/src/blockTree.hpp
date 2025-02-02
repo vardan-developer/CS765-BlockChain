@@ -20,16 +20,18 @@ class BlockTree {
     private:
         BlockTreeNode* genesis;
         BlockTreeNode* current; // Points to the bottom of the current longest chain
-        std::unordered_map<blockId_t, BlockTreeNode*> blockIdToNode;
 
         /*
             Validates that all transactions in the chain are consistent
         */
         bool validateChain(BlockTreeNode* node /* The bottom of the chain */, std::vector<Utxo *> & utxosUsedByNewNode) const;
 
-        BlockTreeNode* findLCA(BlockTreeNode* node1, BlockTreeNode* node2) const;
         void printSubTree(BlockTreeNode* node, std::ofstream & file) const;
     public:
+        std::unordered_map<blockId_t, BlockTreeNode*> blockIdToNode;
+        BlockTreeNode* findLCA(BlockTreeNode* node1, BlockTreeNode* node2) const;
+
+        BlockTreeNode* findLCA(Block node1, Block node2) const;
         BlockTree();
 
         BlockTree(const Block & genesisBlock, time_t arrivalTime);
@@ -52,6 +54,9 @@ class BlockTree {
 
         void printTree(std::string filename) const;
         void printChain(BlockTreeNode* node /* The bottom of the chain */) const; /* Prints the chain from the bottom to the genesis */
+
+        bool verifyUtxo(Utxo utxo) const;
+
 
 };
 
