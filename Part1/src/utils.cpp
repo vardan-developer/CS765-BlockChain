@@ -177,3 +177,18 @@ std::vector<std::vector<int> > generate_graph(int n) {
 
     return adj;
 }
+
+class Counter{
+    private:
+        static blockId_t blockIDCount;
+        static  txnId_t txnIDCount;
+
+    public:
+        static blockId_t getBlockID(){
+            return blockIDCount++;
+        }
+
+        static txnId_t getTxnID(){
+            return txnIDCount++;
+        }
+};

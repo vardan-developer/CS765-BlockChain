@@ -6,11 +6,13 @@
 #include "transaction.hpp"
 
 enum class EventType {
-    RECEIVE_TRANSACTION,
-    RECEIVE_BLOCK,
+    RECEIVE_BROADCAST_TRANSACTION,
+    RECEIVE_BROADCAST_BLOCK,
     BLOCK_CREATION,
     BROADCAST_BLOCK,
-    BROADCAST_TRANSACTION
+    BROADCAST_TRANSACTION,
+    SEND_BROADCAST_BLOCK,
+    SEND_BROADCAST_TRANSACTION
 };
 
 struct Event {
@@ -18,19 +20,22 @@ struct Event {
     Block * block;
     Transaction * transaction;
     time_t timestamp;       // Time when this event will be processed
+    minerId_t owner;
 
-    Event(EventType type, const Block & block, time_t timestamp):
+    Event(EventType type, const Block & block, time_t timestamp, minerId_t owner):
         type(type),
         transaction(nullptr),
-        timestamp(timestamp)
+        timestamp(timestamp),
+        owner(owner)
     {
         this->block = new Block(block);
     }
 
-    Event(EventType type, const Transaction & transaction, time_t timestamp):
+    Event(EventType type, const Transaction & transaction, time_t timestamp, minerId_t owner):
         type(type),
         block(nullptr),
-        timestamp(timestamp)
+        timestamp(timestamp),
+        owner(owner)
     {
         this->transaction = new Transaction(transaction);
     }
@@ -38,6 +43,7 @@ struct Event {
     Event(const Event & other) {
         type = other.type;
         timestamp = other.timestamp;
+        owner = other.owner;
         if (other.block != nullptr) {
             block = new Block(*other.block);
             transaction = nullptr;
@@ -53,6 +59,7 @@ struct Event {
         }
         type = other.type;
         timestamp = other.timestamp;
+        owner = other.owner;
         if (other.block != nullptr) {
             block = new Block(*other.block);
             transaction = nullptr;
