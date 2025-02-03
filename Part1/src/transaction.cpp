@@ -1,4 +1,4 @@
-#include <"transaction.hpp">
+#include "transaction.hpp"
 
 Transaction::Transaction(txnID_t id, TransactionType type, minerID_t sender, minerID_t receiver, uint32_t amount){
     this->id = id;
@@ -6,4 +6,8 @@ Transaction::Transaction(txnID_t id, TransactionType type, minerID_t sender, min
     this->sender = sender;
     this->receiver = receiver;
     this->amount = amount;
+}
+
+size_t Transaction::dataSize() const {
+    return sizeof(Transaction);
 }
