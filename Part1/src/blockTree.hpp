@@ -29,11 +29,11 @@ class BlockTree {
         void printSubTree(BlockTreeNode* node, std::ofstream & file) const;
 
         std::queue<Utxo> unspentUtxos;
-    public:
-        std::unordered_map<blockId_t, BlockTreeNode*> blockIdToNode;
+        bool verifyUtxo(Utxo & utxo) const;
         BlockTreeNode* findLCA(BlockTreeNode* node1, BlockTreeNode* node2) const;
 
-        BlockTreeNode* findLCA(Block node1, Block node2) const;
+        std::unordered_map<blockId_t, BlockTreeNode*> blockIdToNode;
+    public:
         BlockTree();
         BlockTree(minerId_t id);
 
@@ -58,7 +58,6 @@ class BlockTree {
         void printTree(std::string filename) const;
         void printChain(BlockTreeNode* node /* The bottom of the chain */) const; /* Prints the chain from the bottom to the genesis */
 
-        bool verifyUtxo(Utxo & utxo) const;
 
         /*
             Returns a vector of utxos that can be used to pay for a transaction of the desired amount
