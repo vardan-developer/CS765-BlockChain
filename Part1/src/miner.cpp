@@ -9,7 +9,6 @@ Miner::Miner(int id, double hashPower, std::vector<minerId_t> neighbours)
     this->currentHeight = 0;
     this->amount = 0;
     this->currentScheduledBlock = nullptr;
-    this->unspentUtxos = std::queue<Utxo>();
     this->neighbours = neighbours;
     this->currentScheduledTransactionTime = 0;
 }
@@ -127,12 +126,6 @@ std::vector<Event> Miner::receiveBroadcastBlock(Event &event)
 
     if(blockTree.addBlock(*event.block, event.timestamp, memPool) < 0){
         return newEvents;
-    }
-
-    for (auto txn: event.block->transactions){
-        for (auto utxo: txn.out_utxos){
-            if (utxo.owner == id) unspentUtxos.push(utxo);
-        }
     }
 
     if(blockTree.getCurrentHeight() > currentHeight){

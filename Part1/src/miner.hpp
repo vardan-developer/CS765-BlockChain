@@ -16,7 +16,6 @@ class Miner {
         int amount;
         Block * currentScheduledBlock; //Block which is scheduled on main thread
         time_t currentScheduledTransactionTime;
-        std::queue<Utxo> unspentUtxos;
         std::vector<minerId_t> neighbours;
         std::unordered_map<blockId_t, std::set<minerId_t> > blockToMiners;
         std::unordered_map<blockId_t, std::set<minerId_t> > blockToTransactions;
