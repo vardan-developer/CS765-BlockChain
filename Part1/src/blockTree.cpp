@@ -329,7 +329,7 @@ bool BlockTree::verifyUtxo(Utxo & utxo) const {
     if ( * storedUtxo != utxo ) {
         return false;
     }
-    if ( utxoBlock == this->findLCA(utxoBlock, this->current) || this->current == this->findLCA(utxoBlock, this->current) ) {
+    if ( utxoBlock != this->findLCA(utxoBlock, this->current) ) {
         return false;
     }
     for ( auto blockConsumingUtxo : storedUtxo->consumedBy ) {
@@ -346,18 +346,27 @@ std::vector<Utxo> BlockTree::getUtxos(int paymentAmount, int & change) {
         return std::vector<Utxo>();
     }
     int scannedUtxos = 0;
+    int newBalance = this->balance;
     while (paymentAmount > 0 && scannedUtxos < unspentUtxos.size()) {
         if ( verifyUtxo(unspentUtxos.front()) ) {
             utxos.push_back(unspentUtxos.front());
             paymentAmount -= unspentUtxos.front().amount;
+            newBalance -= unspentUtxos.front().amount;
+            unspentUtxos.pop();
+        } else {
+            unspentUtxos.push(unspentUtxos.front());
+            unspentUtxos.pop();
         }
-        unspentUtxos.push(unspentUtxos.front());
-        unspentUtxos.pop();
         scannedUtxos++;
     }
     if ( paymentAmount > 0 ) {
+        while ( ! utxos.empty() ) {
+            unspentUtxos.push(utxos.back());
+            utxos.pop_back();
+        }
         return std::vector<Utxo>();
     }
+    this->balance = newBalance;
     change = - paymentAmount;
     return utxos;
 }
