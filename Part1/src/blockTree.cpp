@@ -153,14 +153,18 @@ int BlockTree::addBlock(Block & block) {
 
 void BlockTree::processTransaction(std::vector<Transaction> & transactions) {
     for ( Transaction & txn : transactions ) {
-        balanceMap[txn.sender] -= txn.amount;
+        if ( txn.type != TransactionType::COINBASE ) {
+            balanceMap[txn.sender] -= txn.amount;
+        }
         balanceMap[txn.receiver] += txn.amount;
     }
 }
 
 void BlockTree::deProcessTransactions(std::vector<Transaction> & transactions) {
     for ( Transaction & txn : transactions ) {
-        balanceMap[txn.sender] += txn.amount;
+        if ( txn.type != TransactionType::COINBASE ) {
+            balanceMap[txn.sender] += txn.amount;
+        }
         balanceMap[txn.receiver] -= txn.amount;
     }
 }
