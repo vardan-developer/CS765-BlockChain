@@ -243,12 +243,22 @@ void BlockTree::updateMemPoolAndBalance(BlockTreeNode* node, std::set<Transactio
                 this->balance += utxo.amount;
             }
         }
+        for ( auto utxo: txn.in_utxos){
+            if (utxo.owner == id){
+                this->balance -= utxo.amount;
+            }
+        }
     }
     for (auto txn: memPoolErase){
         memPool.erase(txn);
         for (auto utxo: txn.out_utxos){
             if (utxo.owner == id){
                 this->balance -= utxo.amount;
+            }
+        }
+        for ( auto utxo: txn.in_utxos){
+            if (utxo.owner == id){
+                this->balance += utxo.amount;
             }
         }
     }
