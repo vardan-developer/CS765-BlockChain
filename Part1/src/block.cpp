@@ -54,5 +54,5 @@ bool Block::operator<(const Block& block) const{
 }
 
 size_t Block::dataSize() const {
-    return sizeof(Block) + std::accumulate(transactions.begin(), transactions.end(), (size_t) 0, [](int sum, Transaction & txn) { return sum + txn.dataSize(); });
+    return sizeof(Block) + std::accumulate(transactions.begin(), transactions.end(), (size_t) 0, [](size_t sum, Transaction & txn) { return sum + txn.dataSize(); });
 }

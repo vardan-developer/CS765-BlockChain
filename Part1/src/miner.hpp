@@ -1,7 +1,7 @@
 #ifndef MINER_HPP
 #define MINER_HPP
 
-#include "defs.hpp"
+#include "def.hpp"
 #include "blockTree.hpp"
 
 class Miner{
