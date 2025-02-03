@@ -30,14 +30,22 @@ BlockTree::BlockTree() {
     current = nullptr;
 }
 
-BlockTree::BlockTree(const Block & genesisBlock, time_t arrivalTime) {
+BlockTree::BlockTree(minerId_t id) {
+    genesis = nullptr;
+    current = nullptr;
+    this->id = id;
+}
+
+BlockTree::BlockTree(const Block & genesisBlock, time_t arrivalTime, minerId_t id) {
     genesis = new BlockTreeNode(genesisBlock, arrivalTime);
     current = genesis;
+    this->id = id;
 }
 
 BlockTree::BlockTree(const BlockTree & other) {
     genesis = new BlockTreeNode(*other.genesis);
     current = genesis;
+    this->id = other.id;
 }
 
 BlockTree & BlockTree::operator=(const BlockTree & other) {
@@ -46,6 +54,7 @@ BlockTree & BlockTree::operator=(const BlockTree & other) {
     }
     genesis = new BlockTreeNode(*other.genesis);
     current = genesis;
+    this->id = other.id;
     return *this;
 }
 
@@ -54,6 +63,7 @@ BlockTree::BlockTree(BlockTree && other) {
     current = other.current;
     other.genesis = nullptr;
     other.current = nullptr;
+    this->id = other.id;
 }
 
 BlockTree & BlockTree::operator=(BlockTree && other) {
@@ -64,6 +74,7 @@ BlockTree & BlockTree::operator=(BlockTree && other) {
     current = other.current;
     other.genesis = nullptr;
     other.current = nullptr;
+    this->id = other.id;
     return *this;
 }
 
@@ -182,7 +193,7 @@ bool BlockTree::validateChain(BlockTreeNode* node, std::vector<Utxo *> & utxosUs
     return true;
 }
 
-int BlockTree::addBlock(const Block block, time_t arrivalTime) {
+int BlockTree::addBlock(const Block block, time_t arrivalTime, std::set<Transaction> & memPool) {
 
     // Making a Tree Node object for our new block
     BlockTreeNode * blockTreeNode = new BlockTreeNode (block, arrivalTime);
@@ -192,6 +203,14 @@ int BlockTree::addBlock(const Block block, time_t arrivalTime) {
     std::vector<Utxo *> utxosUsedByNewNode;
 
     if ( this->validateChain(blockTreeNode, utxosUsedByNewNode) ) {
+        // Adding unspent utxos belonging to the miner to the unspentUtxos queue
+        for ( Transaction & transaction : blockTreeNode->block.transactions ) {
+            for ( Utxo & utxo : transaction.out_utxos ) {
+                if ( utxo.owner == id ) {
+                    unspentUtxos.push(utxo);
+                }
+            }
+        }
         // Registering the new node in mappings
         blockIdToNode[blockTreeNode->block.id] = blockTreeNode;
         parentBlock->children.push_back(blockTreeNode);
@@ -207,7 +226,47 @@ int BlockTree::addBlock(const Block block, time_t arrivalTime) {
 
     // Updating current head of blockchain
     if ( blockTreeNode->height > this->current->height ) {
+
+        BlockTreeNode * node1 = blockIdToNode[current->block.id];
+        BlockTreeNode * node2 = blockIdToNode[block.id];
+
+        std::set<Transaction> memPoolErase;
+        std::set<Transaction> memPoolInsert;
+
+        while ( node1->height > node2->height ) {
+            for (auto txn: node1->block.transactions){
+                memPoolInsert.insert(txn);
+            }
+            node1 = node1->parent;
+        }
+
+        while ( node2->height > node1->height ) {
+            for (auto txn: node2->block.transactions){
+                memPoolErase.insert(txn);
+            }
+            node2 = node2->parent;
+        }
+        
+        while ( node1 != node2 ) {
+            for (auto txn: node1->block.transactions){
+                memPoolInsert.insert(txn);
+            }
+            for (auto txn: node2->block.transactions){
+                memPoolErase.insert(txn);
+            }
+            node1 = node1->parent;
+            node2 = node2->parent;
+        }
+        
+
+        for (auto txn: memPoolInsert){
+            memPool.insert(txn);
+        }
+        for (auto txn: memPoolErase){
+            memPool.erase(txn);
+        }
         this->current = blockTreeNode;
+
     }
 
     return this->current->height;
@@ -258,4 +317,26 @@ bool BlockTree::verifyUtxo(Utxo & utxo) const {
         }
     }
     return true;
+}
+
+std::vector<Utxo> BlockTree::getUtxos(int amount, int & change) {
+    std::vector<Utxo> utxos;
+    if (unspentUtxos.empty()) {
+        return std::vector<Utxo>();
+    }
+    int scannedUtxos = 0;
+    while (amount > 0 && scannedUtxos < unspentUtxos.size()) {
+        if ( verifyUtxo(unspentUtxos.front()) ) {
+            utxos.push_back(unspentUtxos.front());
+            amount -= unspentUtxos.front().amount;
+        }
+        unspentUtxos.push(unspentUtxos.front());
+        unspentUtxos.pop();
+        scannedUtxos++;
+    }
+    if ( amount > 0 ) {
+        return std::vector<Utxo>();
+    }
+    change = - amount;
+    return utxos;
 }

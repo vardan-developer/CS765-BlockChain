@@ -4,7 +4,7 @@ Miner::Miner(int id, double hashPower, std::vector<minerId_t> neighbours)
 {
     this->id = id;
     this->hashPower = hashPower;
-    this->blockTree = BlockTree();
+    this->blockTree = BlockTree(id);
     this->currentBlock = Block();
     this->currentHeight = 0;
     this->amount = 0;
@@ -44,7 +44,7 @@ std::vector<Event> Miner::confirmBlock(Event &event)
         }
 
     }
-    blockTree.addBlock(*event.block, event.timestamp);
+    blockTree.addBlock(*event.block, event.timestamp, memPool);
     return std::vector<Event>{event};
 }
 
@@ -95,31 +95,22 @@ std::vector<Event> Miner::generateTransaction(time_t prev_time)
     }
     time_t scheduleTime = prev_time + getExponentialRandom(TXN_INTER_ARRIVAL_TIME);
     txnId_t txnID = Counter::getTxnID();
-    std::vector<Utxo> in_utxos;
-    std::vector<Utxo> out_utxos;
 
     int paymentAmount = getUniformRandom(1, amount);
     minerId_t paymentReceiver;
 
     while((paymentReceiver = getUniformRandom(1, NUM_MINERS)) == id);
 
-    int currentAmount = 0;
-    
-    while(currentAmount < paymentAmount){
-        
-        for (int i = 0; i < unspentUtxos.size() and !blockTree.verifyUtxo(unspentUtxos.front()); i++) { // TODO: implement verifyUtxo function
-            unspentUtxos.push(unspentUtxos.front());
-            unspentUtxos.pop();
-        }
-        
-        in_utxos.push_back(unspentUtxos.front());
-        currentAmount += unspentUtxos.front().amount;
-        unspentUtxos.pop();
+    int change;
+    std::vector<Utxo> in_utxos = blockTree.getUtxos(paymentAmount, change);
+    if ( in_utxos.empty() ) {
+        return std::vector<Event>();
     }
-    amount -= currentAmount;
+    std::vector<Utxo> out_utxos;
+
     out_utxos.push_back(Utxo(-1, txnID, 0, paymentReceiver, paymentAmount));
-    if(currentAmount > paymentAmount){
-        out_utxos.push_back(Utxo(-1, txnID, 1, id, currentAmount - paymentAmount));
+    if(change > 0){
+        out_utxos.push_back(Utxo(-1, txnID, 1, id, change));
     }
 
     Transaction txn = Transaction(txnID, in_utxos, out_utxos, TransactionType::NORMAL);
@@ -134,7 +125,7 @@ std::vector<Event> Miner::receiveBroadcastBlock(Event &event)
     int sendingMiner = event.owner;
     blockToMiners[event.block->id].insert(sendingMiner);
 
-    if(blockTree.addBlock(*event.block, event.timestamp) < 0){
+    if(blockTree.addBlock(*event.block, event.timestamp, memPool) < 0){
         return newEvents;
     }
 
@@ -149,36 +140,6 @@ std::vector<Event> Miner::receiveBroadcastBlock(Event &event)
         for (auto txn: currentScheduledBlock->transactions){
             memPool.insert(txn);
         }
-        
-        BlockTreeNode * node1 = blockTree.blockIdToNode[currentBlock.id];
-        BlockTreeNode * node2 = blockTree.blockIdToNode[event.block->id];
-
-
-        while ( node1->height > node2->height ) {
-            for (auto txn: node1->block.transactions){
-                memPool.insert(txn);
-            }
-            node1 = node1->parent;
-        }
-
-        while ( node2->height > node1->height ) {
-            for (auto txn: node2->block.transactions){
-                memPool.erase(txn);
-            }
-            node2 = node2->parent;
-        }
-        
-        while ( node1 != node2 ) {
-            for (auto txn: node1->block.transactions){
-                memPool.insert(txn);
-            }
-            for (auto txn: node2->block.transactions){
-                memPool.erase(txn);
-            }
-            node1 = node1->parent;
-            node2 = node2->parent;
-        }
-
         currentScheduledBlock = nullptr;
         currentBlock = *event.block;
         currentHeight = blockTree.getCurrentHeight();
