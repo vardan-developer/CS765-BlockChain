@@ -25,7 +25,7 @@ std::vector<Event> Miner::receiveEvent(Event &event)
     case EventType::BLOCK_CREATION:
         return confirmBlock(event);
     default:
-        break;
+        return std::vector<Event>();
     }
 }
 
