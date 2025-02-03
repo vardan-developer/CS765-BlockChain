@@ -30,18 +30,21 @@ BlockTree::BlockTree() {
     this->id = 0;
     this->genesis = nullptr;
     this->current = nullptr;
+    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
 }
 
 BlockTree::BlockTree(minerID_t id) {
     this->id = id;
     this->genesis = nullptr;
     this->current = nullptr;
+    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
 }
 
 BlockTree::BlockTree(BlockTreeNode * genesis, minerID_t id) {
     this->id = id;
     this->genesis = genesis;
     this->current = genesis;
+    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
 }
 
 BlockTree::~BlockTree() {
@@ -144,6 +147,7 @@ int BlockTree::addBlock(Block & block) {
         blockToNode[block.id] = node;
         parent->children.push_back(node);
         updateBalance(node);
+        printBlock(node);
         return std::max(node->height, this->current->height);
     } else {
         delete node;
@@ -216,4 +220,61 @@ int BlockTree::switchToLongestChain(Block & block, std::set<Transaction> & memPo
         this->current = node;
     }
     return this->current->height;
+}
+
+void BlockTree::printTree(std::string filename) const {
+    std::ofstream file(filename);
+    if ( ! genesis || ! file.is_open() ) {
+        return;
+    }
+    printSubTree(genesis, file);
+    file.close();
+}
+
+void BlockTree::printSubTree(BlockTreeNode* node, std::ofstream & file) const {
+    file << "( " << node->block.id << " " << node->arrivalTime << std::endl;
+    for (BlockTreeNode* child : node->children) {
+        printSubTree(child, file);
+    }
+    file << ")" << std::endl;
+}
+
+void BlockTree::printChain(BlockTreeNode* node) const {
+    while (node) {
+        std::cout << node->block.id << std::endl;
+        node = node->parent;
+    }
+}
+
+void BlockTree::exportToDot(const std::string & filename) const {
+    std::ofstream file(filename);
+    if(!file.is_open()){
+        std::cerr << "Error opening file: " << filename << std::endl;
+        return;
+    }
+    file << "digraph BlockchainTree {\n";
+    file << " node [shape=block];\n";
+
+    std::function<void(BlockTreeNode*)> traverse = [&](BlockTreeNode* node) {
+        if (!node) return;
+
+        file << "    \"" << node->block.id << "\" [label=\"Block " << node->block.id 
+             << "\\nHeight: " << node->height 
+             << "\\nTimestamp: " << node->arrivalTime << "\"];\n";
+
+        for (BlockTreeNode* child : node->children) {
+            file << "    \"" << node->block.id << "\" -> \"" << child->block.id << "\";\n";
+            traverse(child);
+        }
+    };
+
+    traverse(genesis); // Start from the genesis block
+    file << "}\n";
+    file.close();
+
+    std::cout << "DOT file saved: " << filename << std::endl;
+}
+
+void BlockTree::printBlock(BlockTreeNode* node) {
+    file << "Block ID: " << node->block.id << ", Arrival Time: " << node->arrivalTime << ", Parent ID: " << node->parent->block.id << std::endl;
 }

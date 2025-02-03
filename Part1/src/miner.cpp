@@ -1,4 +1,5 @@
 #include "miner.hpp"
+#include "utils.hpp"
 
 extern std::vector<std::vector<minerID_t> > networkTopology;
 
@@ -31,7 +32,7 @@ std::vector<Event> Miner::genTransaction(time_t currentTime){
     time_t scheduledTxnTime = currentTime + static_cast<time_t>(expDelay);
     processingTxnID = Counter::getTxnID();
     Transaction* transaction = new Transaction(processingTxnID, TransactionType::NORMAL, id, receiver, transactionAmount);
-    return {Event(EventType::SEND_BROADCAST_TRANSACTION, transaction, scheduledTxnTime, id)}; // create transaction event
+    return {Event(EventType::SEND_BROADCAST_TRANSACTION, transaction, scheduledTxnTime, id, -1)}; // create transaction event
 }
 
 std::vector<Event> Miner::genBlock(time_t currentTime){
@@ -66,7 +67,7 @@ std::vector<Event> Miner::genBlock(time_t currentTime){
             }
         }
     }
-    return {Event(EventType::SEND_BROADCAST_BLOCK, block, scheduledBlkTime, id)};
+    return {Event(EventType::BLOCK_CREATION, block, scheduledBlkTime, id, -1)};
 }
 
 std::vector<Event> Miner::receiveTransactions(Event event){
@@ -81,7 +82,7 @@ std::vector<Event> Miner::receiveTransactions(Event event){
     for (auto peer: neighbors){
         if(txnToMiner[event.transaction->id].find(peer) == txnToMiner[event.transaction->id].end()){
             txnToMiner[event.transaction->id].insert(peer);
-            newEvents.push_back(Event(EventType::SEND_BROADCAST_TRANSACTION, event.transaction, event.timestamp, id));
+            newEvents.push_back(Event(EventType::SEND_BROADCAST_TRANSACTION, event.transaction, event.timestamp, id, peer));
         }
     }
 
@@ -105,7 +106,7 @@ std::vector<Event> Miner::receiveBlock(Event event){
     for (auto peer: neighbors){
         if(blkToMiner[event.block->id].find(peer) == blkToMiner[event.block->id].end()){
             blkToMiner[event.block->id].insert(peer);
-            newEvents.push_back(Event(EventType::SEND_BROADCAST_BLOCK, event.block, event.timestamp, id));
+            newEvents.push_back(Event(EventType::SEND_BROADCAST_BLOCK, event.block, event.timestamp, id, peer));
         }
     }
 

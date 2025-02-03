@@ -13,7 +13,6 @@
 #include <iostream>
 #include <fstream>
 #include <stack>
-#include "utils.hpp"
 
 using minerID_t = uint64_t;
 using txnID_t = uint64_t;

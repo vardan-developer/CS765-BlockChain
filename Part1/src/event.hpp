@@ -21,21 +21,24 @@ struct Event {
     Transaction * transaction;
     time_t timestamp;       // Time when this event will be processed
     minerID_t owner;
+    minerID_t receiver;
 
-    Event(EventType type, const Block*  block, time_t timestamp, minerID_t owner):
+    Event(EventType type, const Block*  block, time_t timestamp, minerID_t owner, minerID_t receiver):
         type(type),
         transaction(nullptr),
         timestamp(timestamp),
-        owner(owner)
+        owner(owner),
+        receiver(receiver)
     {
         this->block = new Block(*block);
     }
 
-    Event(EventType type, const Transaction*  transaction, time_t timestamp, minerID_t owner):
+    Event(EventType type, const Transaction*  transaction, time_t timestamp, minerID_t owner, minerID_t receiver):
         type(type),
         block(nullptr),
         timestamp(timestamp),
-        owner(owner)
+        owner(owner),
+        receiver(receiver)
     {
         this->transaction = new Transaction(*transaction);
     }
@@ -44,6 +47,7 @@ struct Event {
         type = other.type;
         timestamp = other.timestamp;
         owner = other.owner;
+        receiver = other.receiver;
         if (other.block != nullptr) {
             block = new Block(*other.block);
             transaction = nullptr;
@@ -60,6 +64,7 @@ struct Event {
         type = other.type;
         timestamp = other.timestamp;
         owner = other.owner;
+        receiver = other.receiver;
         if (other.block != nullptr) {
             block = new Block(*other.block);
             transaction = nullptr;

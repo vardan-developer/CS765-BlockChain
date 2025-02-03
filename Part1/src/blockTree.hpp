@@ -37,6 +37,10 @@ class BlockTree {
         void processTransaction(std::vector<Transaction> & transactions);
         void deProcessTransactions(std::vector<Transaction> & transactions);
 
+        void printSubTree(BlockTreeNode* node, std::ofstream & file) const;
+        void printBlock(BlockTreeNode* node) ;
+        std::ofstream file;   
+
     public:
         BlockTree();
         BlockTree(minerID_t id);
@@ -52,7 +56,9 @@ class BlockTree {
         int switchToLongestChain(Block & block, std::set<Transaction> & memPool);
         int getBalance();
         Block getCurrent();
-
+        void exportToDot(const std::string & filename) const;
+        void printTree(std::string filename) const;
+        void printChain(BlockTreeNode* node /* The bottom of the chain */) const; /* Prints the chain from the bottom to the genesis */
 };
 
 
