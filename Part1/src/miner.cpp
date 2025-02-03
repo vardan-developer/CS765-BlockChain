@@ -135,7 +135,8 @@ std::vector<Event> Miner::receiveBroadcastBlock(Event &event)
         currentScheduledBlock = nullptr;
         currentBlock = *event.block;
         currentHeight = blockTree.getCurrentHeight();
-        newEvents.insert(newEvents.end(), generateBlock(event.timestamp).begin(), generateBlock(event.timestamp).end());
+        std::vector<Event> newEvents = generateBlock(event.timestamp);
+        newEvents.insert(newEvents.end(), newEvents.begin(), newEvents.end());
     }
     for(auto peer: neighbours){
         if(blockToMiners[event.block->id].find(peer) == blockToMiners[event.block->id].end()){
