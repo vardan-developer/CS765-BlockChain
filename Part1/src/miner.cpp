@@ -7,7 +7,6 @@ Miner::Miner(int id, double hashPower, std::vector<minerId_t> neighbours)
     this->blockTree = BlockTree(id);
     this->currentBlock = Block();
     this->currentHeight = 0;
-    this->amount = 0;
     this->currentScheduledBlock = nullptr;
     this->neighbours = neighbours;
     this->currentScheduledTransactionTime = 0;
@@ -89,13 +88,13 @@ std::vector<Event> Miner::generateTransaction(time_t prev_time)
     {
         return std::vector<Event>();
     }
-    if(amount <= 0){
+    if(blockTree.getBalance() <= 0){
         return std::vector<Event>();
     }
     time_t scheduleTime = prev_time + getExponentialRandom(TXN_INTER_ARRIVAL_TIME);
     txnId_t txnID = Counter::getTxnID();
 
-    int paymentAmount = getUniformRandom(1, amount);
+    int paymentAmount = getUniformRandom(1, blockTree.getBalance());
     minerId_t paymentReceiver;
 
     while((paymentReceiver = getUniformRandom(1, NUM_MINERS)) == id);

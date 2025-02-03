@@ -21,6 +21,7 @@ class BlockTree {
         BlockTreeNode* genesis;
         BlockTreeNode* current; // Points to the bottom of the current longest chain
         minerId_t id;
+        int balance;
         /*
             Validates that all transactions in the chain are consistent
         */
@@ -31,6 +32,9 @@ class BlockTree {
         std::queue<Utxo> unspentUtxos;
         bool verifyUtxo(Utxo & utxo) const;
         BlockTreeNode* findLCA(BlockTreeNode* node1, BlockTreeNode* node2) const;
+        void addNewUnspentUtxos(BlockTreeNode* node);
+        void updateMemPoolAndBalance(BlockTreeNode* node, std::set<Transaction> & memPool);
+        void rollBack(std::vector<Utxo *> & utxosUsedByNewNode);
 
         std::unordered_map<blockId_t, BlockTreeNode*> blockIdToNode;
     public:
@@ -46,6 +50,7 @@ class BlockTree {
 
         Block getCurrent() const;
         int getCurrentHeight() const;
+        int getBalance() const;
 
         /*
             1) Checks if the block can be added to the desired chain (Checks if transactions used are valid)
@@ -63,7 +68,7 @@ class BlockTree {
             Returns a vector of utxos that can be used to pay for a transaction of the desired amount
             If the amount is not possible to pay for with the current utxos, returns an empty vector
         */
-        std::vector<Utxo> getUtxos(int amount, int & change);
+        std::vector<Utxo> getUtxos(int paymentAmount, int & change);
         void exportToDot(const std::string & filename) const;
 
 };

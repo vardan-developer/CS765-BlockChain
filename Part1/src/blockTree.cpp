@@ -193,6 +193,74 @@ bool BlockTree::validateChain(BlockTreeNode* node, std::vector<Utxo *> & utxosUs
     return true;
 }
 
+void BlockTree::addNewUnspentUtxos(BlockTreeNode* node) {
+    for ( Transaction & transaction : node->block.transactions ) {
+        for ( Utxo & utxo : transaction.out_utxos ) {
+            if ( utxo.owner == id ) {
+                unspentUtxos.push(utxo);
+            }
+        }
+    }
+}
+
+void BlockTree::updateMemPoolAndBalance(BlockTreeNode* node, std::set<Transaction> & memPool) {
+    BlockTreeNode * node1 = blockIdToNode.at(current->block.id);
+    BlockTreeNode * node2 = blockIdToNode.at(node->block.id);
+
+    std::set<Transaction> memPoolErase;
+    std::set<Transaction> memPoolInsert;
+
+    while ( node1->height > node2->height ) {
+        for (auto txn: node1->block.transactions){
+            memPoolInsert.insert(txn);
+        }
+        node1 = node1->parent;
+    }
+
+    while ( node2->height > node1->height ) {
+        for (auto txn: node2->block.transactions){
+            memPoolErase.insert(txn);
+        }
+        node2 = node2->parent;
+    }
+    
+    while ( node1 != node2 ) {
+        for (auto txn: node1->block.transactions){
+            memPoolInsert.insert(txn);
+        }
+        for (auto txn: node2->block.transactions){
+            memPoolErase.insert(txn);
+        }
+        node1 = node1->parent;
+        node2 = node2->parent;
+    }
+    
+
+    for (auto txn: memPoolInsert){
+        memPool.insert(txn);
+        for (auto utxo: txn.out_utxos){
+            if (utxo.owner == id){
+                this->balance += utxo.amount;
+            }
+        }
+    }
+    for (auto txn: memPoolErase){
+        memPool.erase(txn);
+        for (auto utxo: txn.out_utxos){
+            if (utxo.owner == id){
+                this->balance -= utxo.amount;
+            }
+        }
+    }
+}
+
+void BlockTree::rollBack(std::vector<Utxo *> & utxosUsedByNewNode) {
+    for ( Utxo * prevAcceptedUtxo : utxosUsedByNewNode ) {
+        prevAcceptedUtxo->consumedBy.pop_back();
+    }
+}
+
+
 int BlockTree::addBlock(const Block block, time_t arrivalTime, std::set<Transaction> & memPool) {
 
     // Making a Tree Node object for our new block
@@ -204,21 +272,13 @@ int BlockTree::addBlock(const Block block, time_t arrivalTime, std::set<Transact
 
     if ( this->validateChain(blockTreeNode, utxosUsedByNewNode) ) {
         // Adding unspent utxos belonging to the miner to the unspentUtxos queue
-        for ( Transaction & transaction : blockTreeNode->block.transactions ) {
-            for ( Utxo & utxo : transaction.out_utxos ) {
-                if ( utxo.owner == id ) {
-                    unspentUtxos.push(utxo);
-                }
-            }
-        }
+        this->addNewUnspentUtxos(blockTreeNode);
         // Registering the new node in mappings
         blockIdToNode[blockTreeNode->block.id] = blockTreeNode;
         parentBlock->children.push_back(blockTreeNode);
         std::cout << "Block added succesfully in blockchain!\n";
     } else {
-        for ( Utxo * prevAcceptedUtxo : utxosUsedByNewNode ) {
-            prevAcceptedUtxo->consumedBy.pop_back();
-        }
+        this->rollBack(utxosUsedByNewNode);
         delete blockTreeNode;
         std::cout << "Block rejected from blockchain!\n";
         return -1;
@@ -226,47 +286,8 @@ int BlockTree::addBlock(const Block block, time_t arrivalTime, std::set<Transact
 
     // Updating current head of blockchain
     if ( blockTreeNode->height > this->current->height ) {
-
-        BlockTreeNode * node1 = blockIdToNode[current->block.id];
-        BlockTreeNode * node2 = blockIdToNode[block.id];
-
-        std::set<Transaction> memPoolErase;
-        std::set<Transaction> memPoolInsert;
-
-        while ( node1->height > node2->height ) {
-            for (auto txn: node1->block.transactions){
-                memPoolInsert.insert(txn);
-            }
-            node1 = node1->parent;
-        }
-
-        while ( node2->height > node1->height ) {
-            for (auto txn: node2->block.transactions){
-                memPoolErase.insert(txn);
-            }
-            node2 = node2->parent;
-        }
-        
-        while ( node1 != node2 ) {
-            for (auto txn: node1->block.transactions){
-                memPoolInsert.insert(txn);
-            }
-            for (auto txn: node2->block.transactions){
-                memPoolErase.insert(txn);
-            }
-            node1 = node1->parent;
-            node2 = node2->parent;
-        }
-        
-
-        for (auto txn: memPoolInsert){
-            memPool.insert(txn);
-        }
-        for (auto txn: memPoolErase){
-            memPool.erase(txn);
-        }
+        this->updateMemPoolAndBalance(blockTreeNode, memPool);
         this->current = blockTreeNode;
-
     }
 
     return this->current->height;
@@ -319,24 +340,28 @@ bool BlockTree::verifyUtxo(Utxo & utxo) const {
     return true;
 }
 
-std::vector<Utxo> BlockTree::getUtxos(int amount, int & change) {
+std::vector<Utxo> BlockTree::getUtxos(int paymentAmount, int & change) {
     std::vector<Utxo> utxos;
     if (unspentUtxos.empty()) {
         return std::vector<Utxo>();
     }
     int scannedUtxos = 0;
-    while (amount > 0 && scannedUtxos < unspentUtxos.size()) {
+    while (paymentAmount > 0 && scannedUtxos < unspentUtxos.size()) {
         if ( verifyUtxo(unspentUtxos.front()) ) {
             utxos.push_back(unspentUtxos.front());
-            amount -= unspentUtxos.front().amount;
+            paymentAmount -= unspentUtxos.front().amount;
         }
         unspentUtxos.push(unspentUtxos.front());
         unspentUtxos.pop();
         scannedUtxos++;
     }
-    if ( amount > 0 ) {
+    if ( paymentAmount > 0 ) {
         return std::vector<Utxo>();
     }
-    change = - amount;
+    change = - paymentAmount;
     return utxos;
+}
+
+int BlockTree::getBalance() const {
+    return this->balance;
 }

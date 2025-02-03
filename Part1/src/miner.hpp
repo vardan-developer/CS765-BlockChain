@@ -13,7 +13,6 @@ class Miner {
         BlockTree blockTree;
         Block currentBlock;    // Block on which the miner is currently working  
         int currentHeight;
-        int amount;
         Block * currentScheduledBlock; //Block which is scheduled on main thread
         time_t currentScheduledTransactionTime;
         std::vector<minerId_t> neighbours;
