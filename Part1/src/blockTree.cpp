@@ -286,7 +286,7 @@ int BlockTree::addBlock(const Block block, time_t arrivalTime, std::set<Transact
 
     // Updating current head of blockchain
     if ( blockTreeNode->height > this->current->height ) {
-        this->updateMemPoolAndBalance(blockTreeNode, memPool);
+        this->updateMemPoolAndBalance(parentBlock, memPool);                // New block transactions are not removed here, handled outside
         this->current = blockTreeNode;
     }
 

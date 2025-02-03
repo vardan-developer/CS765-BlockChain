@@ -132,6 +132,9 @@ std::vector<Event> Miner::receiveBroadcastBlock(Event &event)
         for (auto txn: currentScheduledBlock->transactions){
             memPool.insert(txn);
         }
+        for ( auto txn : event.block->transactions){
+            memPool.erase(txn);
+        }
         currentScheduledBlock = nullptr;
         currentBlock = *event.block;
         currentHeight = blockTree.getCurrentHeight();
