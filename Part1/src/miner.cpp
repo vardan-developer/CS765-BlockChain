@@ -1,7 +1,7 @@
 #include "miner.hpp"
 #include "utils.hpp"
 
-extern std::vector<std::vector<minerID_t> > networkTopology;
+std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > networkTopology;
 
 Miner::Miner(minerID_t id, int totalMiners, int txnInterval, int blkInterval): id(id), blockTree(id), totalMiners(totalMiners), txnInterval(txnInterval), blkInterval(blkInterval) {}
 
@@ -114,7 +114,11 @@ std::vector<Event> Miner::receiveBlock(Event event){
 }
 
 std::vector<minerID_t> Miner::getNeighbors() {
-    return networkTopology[id];
+    std::vector<minerID_t> neighbors;
+    for(auto neighbor: networkTopology[id]){
+        neighbors.push_back(neighbor.first);
+    }
+    return neighbors;
 }
 
 bool Miner::confirmBlock(Event event) {

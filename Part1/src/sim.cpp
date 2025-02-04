@@ -3,13 +3,18 @@
 #include "utils.hpp"
 
 extern std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > networkTopology;
+extern std::set<minerID_t> highCPUMiners;
 
-Simulator::Simulator(int n, int txnInterval, int blkInterval){
+Simulator::Simulator(int n, int txnInterval, int blkInterval){ // received in ms
     totalMiners = n;
     txnInterval = txnInterval;
-    blkInterval = blkInterval;
+    blkInterval = blkInterval; // this is I for each miner it will be I/(fraction of hashing power)
+    int totalHashingPower = 0;
     for(int i = 0; i < n; i++){
-        miners.push_back(Miner(i, n, txnInterval, blkInterval));
+        totalHashingPower += (highCPUMiners.count(i) > 0) ? 10 : 1;
+    }
+    for(int i = 0; i < n; i++){
+        miners.push_back(Miner(i, n, txnInterval, blkInterval*(totalHashingPower/(highCPUMiners.count(i) > 0 ? 10 : 1))));
     }
 }
 
@@ -38,12 +43,12 @@ void Simulator::processEvent(Event event){
     currentTime = event.timestamp;
     switch(event.type){
         case EventType::SEND_BROADCAST_TRANSACTION: {
-            time_t latency = networkTopology[event.owner][event.receiver].first + getExponentialRandom(96.0/networkTopology[event.owner][event.receiver].second.second) + (event.transaction->dataSize()/1024.0)/networkTopology[event.owner][event.receiver].second.second;
+            time_t latency = networkTopology[event.owner][event.receiver].second.first + ceil(getExponentialRandom(96000.0/networkTopology[event.owner][event.receiver].second.second)) + ceil((event.transaction->dataSize()*1000/1024.0)/networkTopology[event.owner][event.receiver].second.second);
             addEvent(Event(EventType::RECEIVE_BROADCAST_TRANSACTION, event.transaction, currentTime + latency, event.owner, event.receiver));
             break;
         }
         case EventType::SEND_BROADCAST_BLOCK: {
-            time_t latency = networkTopology[event.owner][event.receiver].first + getExponentialRandom(96.0/networkTopology[event.owner][event.receiver].second.second) + (event.block->dataSize()/1024.0)/networkTopology[event.owner][event.receiver].second.second;
+            time_t latency = networkTopology[event.owner][event.receiver].second.first + ceil(getExponentialRandom(96000.0/networkTopology[event.owner][event.receiver].second.second)) + ceil((event.block->dataSize()*1000/1024.0)/networkTopology[event.owner][event.receiver].second.second);
             addEvent(Event(EventType::RECEIVE_BROADCAST_BLOCK, event.block, currentTime + latency, event.owner, event.receiver));
             break;
         }
@@ -62,7 +67,7 @@ void Simulator::processEvent(Event event){
         case EventType::BROADCAST_BLOCK: {
             for(auto neighbor : networkTopology[event.owner]){
                 if(neighbor.first == event.owner) continue;
-                time_t latency = neighbor.second.first + getExponentialRandom(96.0/neighbor.second.second) + (event.block->dataSize()/1024.0)/neighbor.second.second;
+                time_t latency = neighbor.second.first + ceil(getExponentialRandom(96000.0/neighbor.second.second)) + ceil((event.block->dataSize()*1000/1024.0)/neighbor.second.second);
                 Event sendBlockEvent(EventType::RECEIVE_BROADCAST_BLOCK, event.block, currentTime + latency, neighbor.first, -1);
                 addEvent(sendBlockEvent);
             }
@@ -71,7 +76,7 @@ void Simulator::processEvent(Event event){
         case EventType::BROADCAST_TRANSACTION: {
             for(auto neighbor : networkTopology[event.owner]){
                 if(neighbor.first == event.owner) continue;
-                time_t latency = neighbor.second.first + getExponentialRandom(96.0/neighbor.second.second) + (event.transaction->dataSize()/1024.0)/neighbor.second.second;
+                time_t latency = neighbor.second.first + ceil(getExponentialRandom(96000.0/neighbor.second.second)) + ceil((event.transaction->dataSize()*1000/1024.0)/neighbor.second.second);
                 Event sendTransactionEvent(EventType::RECEIVE_BROADCAST_TRANSACTION, event.transaction, currentTime + latency, neighbor.first, -1);
                 addEvent(sendTransactionEvent);
             }
