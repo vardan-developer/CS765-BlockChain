@@ -26,3 +26,10 @@ int main(int argc, char* argv[]){
     simulator.run();
 }
 
+void printNetworkTopology(std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > networkTopology){
+    for(int i = 0; i < networkTopology.size(); i++){
+        std::cout << "Miner " << i << " has neighbors: ";
+        for(int j = 0; j < networkTopology[i].size(); j++){
+            std::cout << networkTopology[i][j].first << " ";
+        }
+}
