@@ -162,7 +162,7 @@ std::vector<Event> Miner::receiveBlock(Event event){
 std::vector<minerID_t> Miner::getNeighbors() {
     std::vector<minerID_t> neighbors;
     for(auto neighbor: networkTopology[id]){
-        neighbors.push_back(neighbor.first);
+        if ( neighbor.first >= 0 ) neighbors.push_back(neighbor.first);
     }
     return neighbors;
 }
