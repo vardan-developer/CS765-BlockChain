@@ -30,6 +30,7 @@ public:
     Miner& operator=(const Miner&& other);
     Miner(const Miner& other);
     Miner& operator=(const Miner& other);
+    ~Miner();
     std::vector<Event> getEvents(time_t currentTime) ;
     std::vector<Event> genTransaction(time_t currentTime);
     std::vector<Event> genBlock(time_t currentTime);

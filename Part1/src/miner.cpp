@@ -195,3 +195,7 @@ void Miner::printMiner(){
     std::cout << "Block Interval: " << blkInterval << std::endl;
     std::cout << "Transaction Interval: " << txnInterval << std::endl;
 }
+
+Miner::~Miner(){
+    if ( id == 1 ) blockTree.exportToDot("blockTree.dot");
+}

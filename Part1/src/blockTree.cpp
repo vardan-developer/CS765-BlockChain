@@ -179,6 +179,7 @@ int BlockTree::addBlock(Block & block, time_t arrivalTime) {
         parent->children.push_back(node);
         updateBalance(node);
         printBlock(node, arrivalTime);
+        node->arrivalTime = arrivalTime;
         return std::max(node->height, this->current->height);
     } else {
         delete node;
