@@ -14,9 +14,9 @@
 #include <fstream>
 #include <stack>
 
-using minerID_t = int64_t;
-using txnID_t = uint64_t;
-using blockID_t = uint64_t;
+using minerID_t = long long int;
+using txnID_t = long long int;
+using blockID_t = long long int;
 
 
 

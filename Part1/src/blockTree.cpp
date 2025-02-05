@@ -250,6 +250,9 @@ bool BlockTree::switchToLongestChain(Block & block, std::set<Transaction> & memP
 
         this->current = node;
         return true;
+    } else if ( node->parent == this->current ) {
+        this->current = node;
+        return true;
     }
     return false;
 }
@@ -308,5 +311,5 @@ void BlockTree::exportToDot(const std::string & filename) const {
 }
 
 void BlockTree::printBlock(BlockTreeNode* node, time_t arrivalTime) {
-    file << "Block ID: " << node->block.id << ", Arrival Time: " << node->arrivalTime << ", Parent ID: " << node->parent->block.id << std::endl;
+    file << "Block ID: " << node->block.id << ", Arrival Time: " << arrivalTime << ", Parent ID: " << node->parent->block.id << std::endl;
 }

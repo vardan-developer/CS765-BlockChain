@@ -26,7 +26,7 @@ OBJS = $(SRCS:.cpp=.o)
 TARGET = sim
 
 run: all
-	./sim  --total-nodes 5 --slow 0.5 --low-cpu 0.5 --ttx-time 5000 --blk-time 600000 > miners.txt
+	./sim  --total-nodes 5 --slow 0.5 --low-cpu 0.5 --ttx-time 50000 --blk-time 600000 > miners.txt
 
 # Default target: build the executable
 all: $(TARGET)
