@@ -29,6 +29,8 @@ Simulator::Simulator(int n, int txnInterval, int blkInterval, int limit){ // rec
 
 void Simulator::run(){
     do {
+        getEvents();
+        if (events.empty()) continue;
         Event event = events.top();
         events.pop();
         processEvent(event);
@@ -39,20 +41,45 @@ void Simulator::run(){
     } while(!events.empty());
 }
 
-std::vector<Event> Simulator::getEvents(){
-    std::vector<Event> events;
+void Simulator::getEvents(){
+    // std::vector<Event> events;
     for(int i = 0; i < totalMiners; i++){
         std::vector<Event> minerEvents = miners[i].getEvents(currentTime);
-        events.insert(events.end(), minerEvents.begin(), minerEvents.end());
+        // events.insert(events.end(), minerEvents.begin(), minerEvents.end());
+        while (minerEvents.size() > 0) {
+            if (minerEvents.back().type == EventType::BLOCK_CREATION) std::cout << "Event: BLOCK_CREATION, Miner " << minerEvents.back().owner << std::endl;
+            events.push( minerEvents.back() );
+            minerEvents.pop_back();
+        }
     }
-    return events;
+    // return events;
 }
 
 void Simulator::addEvent(Event event){
     events.push(event);
 }
 
+void Simulator::addEvents(std::vector<Event> events){
+    for(auto event : events){
+        this->events.push(event);
+    }
+}
+
+std::string eventTypeToString(EventType type){
+    switch(type){
+        case EventType::SEND_BROADCAST_TRANSACTION: return "SEND_BROADCAST_TRANSACTION";
+        case EventType::SEND_BROADCAST_BLOCK: return "SEND_BROADCAST_BLOCK";
+        case EventType::RECEIVE_BROADCAST_TRANSACTION: return "RECEIVE_BROADCAST_TRANSACTION";
+        case EventType::RECEIVE_BROADCAST_BLOCK: return "RECEIVE_BROADCAST_BLOCK";
+        case EventType::BLOCK_CREATION: return "BLOCK_CREATION";
+        case EventType::BROADCAST_BLOCK: return "BROADCAST_BLOCK";
+        case EventType::BROADCAST_TRANSACTION: return "BROADCAST_TRANSACTION";
+        default: return "UNKNOWN";
+    }
+}
+
 void Simulator::processEvent(Event event){
+    std::cout << "Processing event: " << eventTypeToString(event.type) << ", Miner:  " << event.owner << std::endl;
     currentTime = event.timestamp;
     switch(event.type){
         case EventType::SEND_BROADCAST_TRANSACTION: {
@@ -66,10 +93,10 @@ void Simulator::processEvent(Event event){
             break;
         }
         case EventType::RECEIVE_BROADCAST_TRANSACTION:
-            miners[event.owner].receiveTransactions(event);
+            addEvents(miners[event.receiver].receiveTransactions(event));
             break;
         case EventType::RECEIVE_BROADCAST_BLOCK:
-            miners[event.owner].receiveBlock(event);
+            addEvents(miners[event.receiver].receiveBlock(event));
             break;
         case EventType::BLOCK_CREATION: {
             if ( miners[event.owner].confirmBlock(event) ) {
@@ -78,17 +105,10 @@ void Simulator::processEvent(Event event){
             break;
         }
         case EventType::BROADCAST_BLOCK: {
-            if ( event.owner == 0 ) {
-                for ( auto & miner : miners ) {
-                    Event sendBlockEvent(EventType::RECEIVE_BROADCAST_BLOCK, event.block, currentTime, miner.getID(), event.owner);
-                    addEvent(sendBlockEvent);
-                }
-                break;
-            }
             for(auto neighbor : networkTopology[event.owner]){
                 if(neighbor.first == event.owner) continue;
-                time_t latency = neighbor.second.first + ceil(getExponentialRandom(96000.0/neighbor.second.second)) + ceil((event.block->dataSize()*1000/1024.0)/neighbor.second.second);
-                Event sendBlockEvent(EventType::RECEIVE_BROADCAST_BLOCK, event.block, currentTime + latency, neighbor.first, -1);
+                // time_t latency = neighbor.second.first + ceil(getExponentialRandom(96000.0/neighbor.second.second)) + ceil((event.block->dataSize()*1000/1024.0)/neighbor.second.second);
+                Event sendBlockEvent(EventType::SEND_BROADCAST_BLOCK, event.block, currentTime, event.owner, neighbor.first);
                 addEvent(sendBlockEvent);
             }
             break;
@@ -96,8 +116,8 @@ void Simulator::processEvent(Event event){
         case EventType::BROADCAST_TRANSACTION: {
             for(auto neighbor : networkTopology[event.owner]){
                 if(neighbor.first == event.owner) continue;
-                time_t latency = neighbor.second.first + ceil(getExponentialRandom(96000.0/neighbor.second.second)) + ceil((event.transaction->dataSize()*1000/1024.0)/neighbor.second.second);
-                Event sendTransactionEvent(EventType::RECEIVE_BROADCAST_TRANSACTION, event.transaction, currentTime + latency, neighbor.first, -1);
+                // time_t latency = neighbor.second.first + ceil(getExponentialRandom(96000.0/neighbor.second.second)) + ceil((event.transaction->dataSize()*1000/1024.0)/neighbor.second.second);
+                Event sendTransactionEvent(EventType::SEND_BROADCAST_TRANSACTION, event.transaction, currentTime, event.owner, neighbor.first);
                 addEvent(sendTransactionEvent);
             }
             break;

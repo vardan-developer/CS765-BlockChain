@@ -30,8 +30,11 @@ double getExponentialRandom(double mean) {
 }
 
 double getUniformRandom(double a, double b) {
-    if (a >= b) {
+    if (a > b) {
         throw std::invalid_argument("Lower bound must be less than upper bound.");
+    }
+    if (a == b) {
+        return a;
     }
 
     // Create a random device and a random number generator

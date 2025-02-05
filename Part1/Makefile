@@ -1,4 +1,6 @@
 all:
-	g++ -o sim src/utils.cpp src/main.cpp 
+	g++ -o sim src/*
+g:
+	g++ -o sim src/* -g
 clean:
 	rm sim

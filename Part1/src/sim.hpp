@@ -18,8 +18,9 @@ private:
 public:
     Simulator(int n, int txnInterval, int blkInterval, int limit = 5000);
     void run();
-    std::vector<Event> getEvents();
+    void getEvents();
     void addEvent(Event event);
+    void addEvents(std::vector<Event> events);
     void processEvent(Event event);
 
 };

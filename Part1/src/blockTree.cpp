@@ -166,7 +166,7 @@ void BlockTree::updateBalance(BlockTreeNode * node) {
     }
 }
 
-int BlockTree::addBlock(Block & block) {
+int BlockTree::addBlock(Block & block, time_t arrivalTime) {
     BlockTreeNode * node = new BlockTreeNode(block);
     BlockTreeNode * parent = blockToNode[block.parentID];
     node->parent = parent;
@@ -175,7 +175,7 @@ int BlockTree::addBlock(Block & block) {
         blockToNode[block.id] = node;
         parent->children.push_back(node);
         updateBalance(node);
-        printBlock(node);
+        printBlock(node, arrivalTime);
         return std::max(node->height, this->current->height);
     } else {
         delete node;
@@ -209,10 +209,10 @@ Block BlockTree::getCurrent() {
     return this->current->block;
 }
 
-int BlockTree::switchToLongestChain(Block & block, std::set<Transaction> & memPool) {
+bool BlockTree::switchToLongestChain(Block & block, std::set<Transaction> & memPool) {
     BlockTreeNode * node = blockToNode[block.id];
-    if ( node == nullptr ) {
-        return -1;
+    if ( node == nullptr || block.id == this->current->block.id ) {
+        return false;
     }
     if ( node->height > this->current->height ) {
         BlockTreeNode * node1 = node, * node2 = this->current;
@@ -246,8 +246,9 @@ int BlockTree::switchToLongestChain(Block & block, std::set<Transaction> & memPo
         }
 
         this->current = node;
+        return true;
     }
-    return this->current->height;
+    return false;
 }
 
 void BlockTree::printTree(std::string filename) const {
@@ -303,6 +304,6 @@ void BlockTree::exportToDot(const std::string & filename) const {
     std::cout << "DOT file saved: " << filename << std::endl;
 }
 
-void BlockTree::printBlock(BlockTreeNode* node) {
+void BlockTree::printBlock(BlockTreeNode* node, time_t arrivalTime) {
     file << "Block ID: " << node->block.id << ", Arrival Time: " << node->arrivalTime << ", Parent ID: " << node->parent->block.id << std::endl;
 }

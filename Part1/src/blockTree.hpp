@@ -40,7 +40,7 @@ class BlockTree {
         void deProcessTransactions(std::vector<Transaction> & transactions);
 
         void printSubTree(BlockTreeNode* node, std::ofstream & file) const;
-        void printBlock(BlockTreeNode* node) ;
+        void printBlock(BlockTreeNode* node, time_t arrivalTime) ;
         std::ofstream file;   
 
     public:
@@ -54,8 +54,8 @@ class BlockTree {
         BlockTree & operator=(BlockTree && other);
 
         bool validateBlock(Block & block);
-        int addBlock(Block & block);        // Returns the height of the longest chain after adding the block
-        int switchToLongestChain(Block & block, std::set<Transaction> & memPool);
+        int addBlock(Block & block, time_t arrivalTime);        // Returns the height of the longest chain after adding the block
+        bool switchToLongestChain(Block & block, std::set<Transaction> & memPool);
         int getBalance();
         Block getCurrent();
         void exportToDot(const std::string & filename) const;
