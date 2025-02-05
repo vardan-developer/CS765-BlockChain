@@ -34,11 +34,41 @@ void Simulator::run(){
         Event event = events.top();
         events.pop();
         processEvent(event);
+        // switch(event.type){ 
+        //     case EventType::BLOCK_CREATION:
+        //         std::cout << "Event: BLOCK_CREATION, Miner: " << event.owner << std::endl;
+        //         break;
+        //     case EventType::SEND_BROADCAST_TRANSACTION:
+        //         std::cout << "Event: SEND_BROADCAST_TRANSACTION, Miner: " << event.owner << ", Receiver: " << event.receiver << std::endl;
+        //         break;
+        //     case EventType::SEND_BROADCAST_BLOCK:
+        //         std::cout << "Event: SEND_BROADCAST_BLOCK, Miner: " << event.owner << ", Receiver: " << event.receiver << std::endl;
+        //         break;
+        //     case EventType::RECEIVE_BROADCAST_TRANSACTION:
+        //         std::cout << "Event: RECEIVE_BROADCAST_TRANSACTION, Miner: " << event.owner << ", Receiver: " << event.receiver << std::endl;
+        //         break;
+        //     case EventType::RECEIVE_BROADCAST_BLOCK:
+        //         std::cout << "Event: RECEIVE_BROADCAST_BLOCK, Miner: " << event.owner << ", Receiver: " << event.receiver << std::endl;
+        //         break;
+        //     case EventType::BROADCAST_BLOCK:
+        //         std::cout << "Event: BROADCAST_BLOCK, Miner: " << event.owner << std::endl;
+        //         break;
+        //     case EventType::BROADCAST_TRANSACTION:
+        //         std::cout << "Event: BROADCAST_TRANSACTION, Miner: " << event.owner << std::endl;
+        //         break;
+        //     default:
+        //         break;
+        // }
         limit--;
         if(limit == 0){
             break;
         }
-    } while(!events.empty());
+    } while( true );
+    while( !events.empty() ){
+        Event event = events.top();
+        events.pop();
+        processEvent(event);
+    }
 }
 
 void Simulator::getEvents(){

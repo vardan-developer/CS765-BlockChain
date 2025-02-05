@@ -130,7 +130,9 @@ std::vector<Event> Miner::receiveTransactions(Event event){
 
 std::vector<Event> Miner::receiveBlock(Event event){
 
-    printMiner();
+    // printMiner();
+
+    std::cout << "Block: " << event.block->id << ", Height: " << event.block->height << ", Parent ID: " << event.block->parentID << ", Timestamp: " << event.timestamp << std::endl;
 
     if(blockTree.addBlock(*(event.block), event.timestamp) < 0){
         return std::vector<Event>();

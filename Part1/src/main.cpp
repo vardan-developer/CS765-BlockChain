@@ -2,6 +2,8 @@
 #include "sim.hpp"
 #include "utils.hpp"
 
+void printNetworkTopology(std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > networkTopology);
+
 std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > networkTopology;
 std::set<minerID_t> highCPUMiners;
 // networkTopology[i][j] = (neighborID, (rho_ij, c_ij))
@@ -23,3 +25,4 @@ int main(int argc, char* argv[]){
     Simulator simulator(settings.totalNodes, settings.Ttx, settings.I);
     simulator.run();
 }
+
