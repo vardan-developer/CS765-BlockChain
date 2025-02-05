@@ -130,6 +130,8 @@ std::vector<Event> Miner::receiveTransactions(Event event){
 
 std::vector<Event> Miner::receiveBlock(Event event){
 
+    printMiner();
+
     if(blockTree.addBlock(*(event.block), event.timestamp) < 0){
         return std::vector<Event>();
     }
@@ -170,4 +172,15 @@ bool Miner::confirmBlock(Event event) {
         return true;
     }
     return false;
+}
+
+void Miner::printMiner(){
+    std::cout << "Miner ID: " << id << std::endl;
+    std::cout << "Processing Block ID: " << processingBlockID << std::endl;
+    std::cout << "Processing Transaction ID: " << processingTxnID << std::endl;
+    std::cout << "Processing Block Time: " << processingBlockTime << std::endl;
+    std::cout << "Processing Transaction Time: " << processingTxnTime << std::endl;
+    std::cout << "Balance: " << blockTree.getBalance() << std::endl;
+    std::cout << "Block Interval: " << blkInterval << std::endl;
+    std::cout << "Transaction Interval: " << txnInterval << std::endl;
 }

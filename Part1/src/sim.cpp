@@ -47,7 +47,7 @@ void Simulator::getEvents(){
         std::vector<Event> minerEvents = miners[i].getEvents(currentTime);
         // events.insert(events.end(), minerEvents.begin(), minerEvents.end());
         while (minerEvents.size() > 0) {
-            if (minerEvents.back().type == EventType::BLOCK_CREATION) std::cout << "Event: BLOCK_CREATION, Miner " << minerEvents.back().owner << std::endl;
+            // if (minerEvents.back().type == EventType::BLOCK_CREATION) std::cout << "Event: BLOCK_CREATION, Miner " << minerEvents.back().owner << std::endl;
             events.push( minerEvents.back() );
             minerEvents.pop_back();
         }
@@ -79,7 +79,7 @@ std::string eventTypeToString(EventType type){
 }
 
 void Simulator::processEvent(Event event){
-    std::cout << "Processing event: " << eventTypeToString(event.type) << ", Miner:  " << event.owner << std::endl;
+    // std::cout << "Processing event: " << eventTypeToString(event.type) << ", Miner:  " << event.owner << std::endl;
     currentTime = event.timestamp;
     switch(event.type){
         case EventType::SEND_BROADCAST_TRANSACTION: {

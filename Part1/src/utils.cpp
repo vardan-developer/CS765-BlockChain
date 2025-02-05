@@ -2,8 +2,8 @@
 
 
 // Add these definitions before the Counter methods
-blockID_t Counter::blockIDCount = 0;
-txnID_t Counter::txnIDCount = 0;
+blockID_t Counter::blockIDCount = 1;
+txnID_t Counter::txnIDCount = 1;
 
 blockID_t Counter::getBlockID(){
     return blockIDCount++;

@@ -167,6 +167,9 @@ void BlockTree::updateBalance(BlockTreeNode * node) {
 }
 
 int BlockTree::addBlock(Block & block, time_t arrivalTime) {
+    if (blockToNode.find(block.id) != blockToNode.end()) {
+        return -1;
+    }
     BlockTreeNode * node = new BlockTreeNode(block);
     BlockTreeNode * parent = blockToNode[block.parentID];
     node->parent = parent;

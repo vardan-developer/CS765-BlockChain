@@ -38,6 +38,7 @@ public:
     std::vector<minerID_t> getNeighbors() ;
     bool confirmBlock(Event event);
     int getID() const;
+    void printMiner();
 };
 
 

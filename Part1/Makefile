@@ -1,6 +1,6 @@
 all:
-	g++ -o sim src/*
+	g++ -std=c++17 -o sim src/*.cpp 
 g:
-	g++ -o sim src/* -g
+	g++ -std=c++17 -o sim src/*.cpp -g
 clean:
 	rm sim
