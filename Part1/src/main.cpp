@@ -21,4 +21,5 @@ int main(int argc, char* argv[]){
     networkTopology = generateNetworkTopology(settings.totalNodes, settings.z0);
     highCPUMiners = getHighCPUMiners(settings.totalNodes, settings.z1);
     Simulator simulator(settings.totalNodes, settings.Ttx, settings.I);
+    simulator.run();
 }

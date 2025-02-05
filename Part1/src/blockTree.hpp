@@ -15,7 +15,8 @@ struct BlockTreeNode {
     int height;
     BlockTreeNode * parent;
     std::vector<BlockTreeNode*> children;
-
+    BlockTreeNode();
+    BlockTreeNode(Block block, int height, time_t arrivalTime);
     BlockTreeNode(const Block & block);
     BlockTreeNode(const BlockTreeNode & other);
     BlockTreeNode & operator=(const BlockTreeNode & other);
@@ -29,6 +30,7 @@ class BlockTree {
         std::map<minerID_t, int> balanceMap;
         std::map<blockID_t, BlockTreeNode *> blockToNode;
 
+        BlockTreeNode * deepCopy(BlockTreeNode * root, BlockTreeNode * other);
         bool validateChain(BlockTreeNode * node);
 
         BlockTreeNode * getLca(BlockTreeNode * node1, BlockTreeNode * node2);
@@ -44,12 +46,12 @@ class BlockTree {
     public:
         BlockTree();
         BlockTree(minerID_t id);
-        BlockTree(BlockTreeNode * genesis, minerID_t id);
+        BlockTree(minerID_t id, Block genesisBlock);
         ~BlockTree();
         BlockTree(const BlockTree & other);
         BlockTree & operator=(const BlockTree & other);
-        BlockTree(const BlockTree && other);
-        BlockTree & operator=(const BlockTree && other);
+        BlockTree(BlockTree && other);
+        BlockTree & operator=(BlockTree && other);
 
         bool validateBlock(Block & block);
         int addBlock(Block & block);        // Returns the height of the longest chain after adding the block

@@ -22,8 +22,12 @@ private:
     int blkInterval;
     
 public:
-    Miner(minerID_t id, int totalMiners, int txnInterval, int blkInterval);
+    Miner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock);
     bool operator==(const Miner& other) ;
+    Miner(const Miner&& other);
+    Miner& operator=(const Miner&& other);
+    Miner(const Miner& other);
+    Miner& operator=(const Miner& other);
     std::vector<Event> getEvents(time_t currentTime) ;
     std::vector<Event> genTransaction(time_t currentTime);
     std::vector<Event> genBlock(time_t currentTime);
@@ -31,6 +35,7 @@ public:
     std::vector<Event> receiveBlock(Event event);
     std::vector<minerID_t> getNeighbors() ;
     bool confirmBlock(Event event);
+    int getID() const;
 };
 
 

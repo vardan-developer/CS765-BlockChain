@@ -5,7 +5,7 @@
 extern std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > networkTopology;
 extern std::set<minerID_t> highCPUMiners;
 
-Simulator::Simulator(int n, int txnInterval, int blkInterval){ // received in ms
+Simulator::Simulator(int n, int txnInterval, int blkInterval, int limit){ // received in ms
     totalMiners = n;
     txnInterval = txnInterval;
     blkInterval = blkInterval; // this is I for each miner it will be I/(fraction of hashing power)
@@ -13,17 +13,30 @@ Simulator::Simulator(int n, int txnInterval, int blkInterval){ // received in ms
     for(int i = 0; i < n; i++){
         totalHashingPower += (highCPUMiners.count(i) > 0) ? 10 : 1;
     }
+    Block genesisBlock = createGenesisBlock();
+    miners.reserve(n);
     for(int i = 0; i < n; i++){
-        miners.push_back(Miner(i, n, txnInterval, blkInterval*(totalHashingPower/(highCPUMiners.count(i) > 0 ? 10 : 1))));
+
+        Miner * new_miner = new Miner(i, n, txnInterval, blkInterval*(totalHashingPower/(highCPUMiners.count(i) > 0 ? 10 : 1)), genesisBlock);
+
+        miners.push_back(std::move(* new_miner));
+
     }
+    std::cout << "Miners initialized" << std::endl;
+    currentTime = 0;
+    this->limit = limit;
 }
 
 void Simulator::run(){
-    while(!events.empty()){
+    do {
         Event event = events.top();
         events.pop();
         processEvent(event);
-    }
+        limit--;
+        if(limit == 0){
+            break;
+        }
+    } while(!events.empty());
 }
 
 std::vector<Event> Simulator::getEvents(){
@@ -65,6 +78,13 @@ void Simulator::processEvent(Event event){
             break;
         }
         case EventType::BROADCAST_BLOCK: {
+            if ( event.owner == 0 ) {
+                for ( auto & miner : miners ) {
+                    Event sendBlockEvent(EventType::RECEIVE_BROADCAST_BLOCK, event.block, currentTime, miner.getID(), event.owner);
+                    addEvent(sendBlockEvent);
+                }
+                break;
+            }
             for(auto neighbor : networkTopology[event.owner]){
                 if(neighbor.first == event.owner) continue;
                 time_t latency = neighbor.second.first + ceil(getExponentialRandom(96000.0/neighbor.second.second)) + ceil((event.block->dataSize()*1000/1024.0)/neighbor.second.second);
@@ -83,4 +103,9 @@ void Simulator::processEvent(Event event){
             break;
         }
     }
+}
+
+Block Simulator::createGenesisBlock(){
+    Block genesisBlock(0, 0, 0,  currentTime);
+    return genesisBlock;
 }

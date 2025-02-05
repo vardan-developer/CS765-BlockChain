@@ -4,19 +4,13 @@
 #include <map>
 #include <queue>
 
-BlockTreeNode::BlockTreeNode(const Block & block) {
-    this->block = block;
-    this->parent = nullptr;
-    this->children = std::vector<BlockTreeNode *>();
-    this->height = 0;
-}
+BlockTreeNode::BlockTreeNode(): arrivalTime(0), height(0), parent(nullptr) {}
 
-BlockTreeNode::BlockTreeNode(const BlockTreeNode & other) {
-    this->block = other.block;
-    this->parent = other.parent;
-    this->children = other.children;
-    this->height = other.height;
-}
+BlockTreeNode::BlockTreeNode(Block block, int height, time_t arrivalTime): block(Block(block)), height(height), arrivalTime(arrivalTime), parent(nullptr) {}
+
+BlockTreeNode::BlockTreeNode(const Block & block): block(Block(block)), parent(nullptr), height(0) {}
+
+BlockTreeNode::BlockTreeNode(const BlockTreeNode & other): block(Block(other.block)), parent(other.parent), children(other.children), height(other.height) {}
 
 BlockTreeNode & BlockTreeNode::operator=(const BlockTreeNode & other) {
     this->block = other.block;
@@ -26,67 +20,101 @@ BlockTreeNode & BlockTreeNode::operator=(const BlockTreeNode & other) {
     return *this;
 }
 
-BlockTree::BlockTree() {
-    this->id = 0;
-    this->genesis = nullptr;
-    this->current = nullptr;
-    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
-}
+BlockTree::BlockTree(): id(0), genesis(nullptr), current(nullptr), file(std::ofstream ("miner-" + std::to_string(id) + ".logs")) {}
 
-BlockTree::BlockTree(minerID_t id) {
-    this->id = id;
-    this->genesis = nullptr;
-    this->current = nullptr;
-    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
-}
+BlockTree::BlockTree(minerID_t id): id(id), genesis(nullptr), current(nullptr), file(std::ofstream ("miner-" + std::to_string(id) + ".logs")) {}
 
-BlockTree::BlockTree(BlockTreeNode * genesis, minerID_t id) {
-    this->id = id;
-    this->genesis = genesis;
-    this->current = genesis;
-    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
+BlockTree::BlockTree(minerID_t id, Block genesisBlock): id(id), genesis(new BlockTreeNode(genesisBlock)), current(genesis), file(std::ofstream ("miner-" + std::to_string(id) + ".logs")) {
+    blockToNode[genesis->block.id] = genesis;
 }
 
 BlockTree::~BlockTree() {
+    if ( ! genesis ) {
+        return;
+    }
     std::queue<BlockTreeNode *> q;
     q.push(genesis);
 
     while ( !q.empty() ) {
         BlockTreeNode * node = q.front();
-        for ( BlockTreeNode * child : node->children ) {
-            q.push(child);
-        }
         q.pop();
+        for ( BlockTreeNode * child : node->children ) {
+            if ( child ) {
+                q.push(child);
+            }
+        }
         delete node;
     }
 }
 
 BlockTree::BlockTree(const BlockTree & other) {
     this->id = other.id;
-    this->genesis = new BlockTreeNode(*other.genesis);
-    this->current = new BlockTreeNode(*other.current);
+    this->genesis = other.genesis ? new BlockTreeNode(other.genesis->block, other.genesis->height, other.genesis->arrivalTime) : nullptr;
+    // this->current = other.current ? new BlockTreeNode(other.current->block, other.current->height, other.current->arrivalTime) : nullptr;
+    this->genesis = deepCopy(genesis, other.genesis);
+    for ( auto & [minerId, balance] : other.balanceMap ) {
+        this->balanceMap[minerId] = balance;
+    }
+    this->current = this->blockToNode[other.current->block.id];
+    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
 }
 
 BlockTree & BlockTree::operator = (const BlockTree & other) {
     this->id = other.id;
-    this->genesis = new BlockTreeNode(*other.genesis);
-    this->current = new BlockTreeNode(*other.current);
+    this->genesis = other.genesis ? new BlockTreeNode(other.genesis->block, other.genesis->height, other.genesis->arrivalTime) : nullptr;
+    // this->current = other.current ? new BlockTreeNode(other.current->block, other.current->height, other.current->arrivalTime) : nullptr;
+    this->genesis = deepCopy(genesis, other.genesis);
+    for ( auto & [minerId, balance] : other.balanceMap ) {
+        this->balanceMap[minerId] = balance;
+    }
+    this->current = this->blockToNode[other.current->block.id];
+    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
     return *this;
 }
 
-BlockTree::BlockTree(const BlockTree && other) {
+BlockTree::BlockTree(BlockTree && other) {
     this->id = other.id;
     this->genesis = other.genesis;
+    other.genesis = nullptr;
     this->current = other.current;
+    other.current = nullptr;
+    this->blockToNode = other.blockToNode;
+    other.blockToNode.clear();
+    this->balanceMap = other.balanceMap;
+    other.balanceMap.clear();
+    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
 }
 
-BlockTree & BlockTree::operator = (const BlockTree && other) {
+BlockTree & BlockTree::operator = (BlockTree && other) {
     this->id = other.id;
     this->genesis = other.genesis;
+    other.genesis = nullptr;
     this->current = other.current;
+    other.current = nullptr;
+    this->blockToNode = other.blockToNode;
+    other.blockToNode.clear();
+    this->balanceMap = other.balanceMap;
+    other.balanceMap.clear();
+    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
     return *this;
 }
 
+BlockTreeNode * BlockTree::deepCopy(BlockTreeNode * root, BlockTreeNode * other) {
+    if ( ! other ) {
+        return root;
+    }
+    // root = new BlockTreeNode(other->block, other->height, other->arrivalTime);
+    this->blockToNode[other->block.id] = root;
+    for ( BlockTreeNode * child : other->children ) {
+        if ( child ) {
+            BlockTreeNode * newChild = new BlockTreeNode(child->block, child->height, child->arrivalTime);
+            newChild->parent = root;
+            newChild = deepCopy(newChild, child);
+            root->children.push_back(newChild);
+        }
+    }
+    return root;
+}
 
 BlockTreeNode * BlockTree::getLca(BlockTreeNode * node1, BlockTreeNode * node2) {
     while (node1 != node2) {
@@ -143,7 +171,7 @@ int BlockTree::addBlock(Block & block) {
     BlockTreeNode * parent = blockToNode[block.parentID];
     node->parent = parent;
     node->height = parent->height + 1;
-    if ( validateBlock(node->block) ) {
+    if ( validateChain(node) ) {
         blockToNode[block.id] = node;
         parent->children.push_back(node);
         updateBalance(node);

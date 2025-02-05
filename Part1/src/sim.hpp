@@ -12,9 +12,11 @@ private:
     int totalMiners;
     int txnInterval;
     int blkInterval;
+    int limit;
+    Block createGenesisBlock();
     
 public:
-    Simulator(int n, int txnInterval, int blkInterval);
+    Simulator(int n, int txnInterval, int blkInterval, int limit = 5000);
     void run();
     std::vector<Event> getEvents();
     void addEvent(Event event);

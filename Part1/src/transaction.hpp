@@ -15,8 +15,21 @@ struct Transaction{
     minerID_t receiver;
     uint32_t amount;
 
+    Transaction() : id(0), type(TransactionType::NORMAL), sender(0), receiver(0), amount(0) {}
     Transaction(txnID_t id, TransactionType type, minerID_t sender, minerID_t receiver, uint32_t amount);
     size_t dataSize() const;
+    bool operator < (const Transaction& other) const {
+        return id < other.id;
+    }
+    bool operator == (const Transaction& other) const {
+        return id == other.id;
+    }
+    bool operator != (const Transaction& other) const {
+        return id != other.id;
+    }
+    bool operator > (const Transaction& other) const {
+        return id > other.id;
+    }
 };
 
 #endif

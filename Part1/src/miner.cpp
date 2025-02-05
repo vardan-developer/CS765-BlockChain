@@ -1,12 +1,38 @@
 #include "miner.hpp"
 #include "utils.hpp"
 
-std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > networkTopology;
+extern std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > networkTopology;
 
-Miner::Miner(minerID_t id, int totalMiners, int txnInterval, int blkInterval): id(id), blockTree(id), totalMiners(totalMiners), txnInterval(txnInterval), blkInterval(blkInterval) {}
+Miner::Miner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock): id(id), blockTree(id, genesisBlock), totalMiners(totalMiners), txnInterval(txnInterval), blkInterval(blkInterval) {}
+
+Miner::Miner(const Miner& other): id(other.id), blockTree(BlockTree(other.blockTree)), totalMiners(other.totalMiners), txnInterval(other.txnInterval), blkInterval(other.blkInterval) {}
+
+Miner& Miner::operator=(const Miner& other){
+    this->id = other.id;
+    this->blockTree = BlockTree(other.blockTree);
+    this->totalMiners = other.totalMiners;
+    this->txnInterval = other.txnInterval;
+    this->blkInterval = other.blkInterval;
+    return *this;
+}
+
+Miner::Miner(const Miner&& other): id(other.id), blockTree(std::move(other.blockTree)), totalMiners(other.totalMiners), txnInterval(other.txnInterval), blkInterval(other.blkInterval) {}
+
+Miner& Miner::operator=(const Miner&& other){
+    this->id = other.id;
+    this->blockTree = std::move(other.blockTree);
+    this->totalMiners = other.totalMiners;
+    this->txnInterval = other.txnInterval;
+    this->blkInterval = other.blkInterval;
+    return *this;
+}
 
 bool Miner::operator==(const Miner& other){
     return this->id == other.id;
+}
+
+int Miner::getID() const {
+    return id;
 }
 
 std::vector<Event> Miner::getEvents(time_t currentTime){

@@ -79,9 +79,20 @@ struct Event {
         return timestamp < other.timestamp;
     }
 
+    bool operator == (const Event& other) const {
+        return timestamp == other.timestamp;
+    }
+
+    bool operator != (const Event& other) const {
+        return timestamp != other.timestamp;
+    }
+
+    bool operator > (const Event& other) const {
+        return timestamp > other.timestamp;
+    }
+
     ~Event() {
-        delete block;
-        delete transaction;
+        block ? delete block : delete transaction;
     }
     
 };
