@@ -56,7 +56,7 @@ class BlockTree {
         bool validateBlock(Block & block);
         int addBlock(Block & block, time_t arrivalTime);        // Returns the height of the longest chain after adding the block
         bool switchToLongestChain(Block & block, std::set<Transaction> & memPool);
-        int getBalance();
+        int getBalance(minerID_t id = -1);
         Block getCurrent();
         void exportToDot(const std::string & filename) const;
         void printTree(std::string filename) const;

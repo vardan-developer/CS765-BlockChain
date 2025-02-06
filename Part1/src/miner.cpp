@@ -96,13 +96,23 @@ std::vector<Event> Miner::genBlock(time_t currentTime){
     if (totalTxn > 0){
         int txnCount = getUniformRandom(0, std::min(Kb-1, totalTxn));
         selectedTxn = std::vector<Transaction>(txnCount);
+        std::map<minerID_t, int> txnCountMap;
         for(int i = 0; i < transactions.size() && block->transactions.size() < totalTxn; i++){
-            block->transactions.push_back(transactions[i]);
-            if (!blockTree.validateBlock(*block)){
-                block->transactions.pop_back();
+            if (txnCountMap.find(transactions[i].sender) == txnCountMap.end()){
+                txnCountMap[transactions[i].sender] = 0;
             }
-            else{
-                memPool.erase(transactions[i]);
+            int value = transactions[i].amount;
+            if (txnCountMap[transactions[i].sender] + value > blockTree.getBalance(transactions[i].sender)){
+                continue;
+            }
+            txnCountMap[transactions[i].sender] += value;
+            block->transactions.push_back(transactions[i]);
+            memPool.erase(transactions[i]);
+        }
+        if (!blockTree.validateBlock(*block)){
+            while(block->transactions.size() > 1){
+                memPool.insert(block->transactions.back());
+                block->transactions.pop_back();
             }
         }
     }
