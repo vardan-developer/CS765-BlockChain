@@ -8,15 +8,16 @@ BlockTreeNode::BlockTreeNode(): arrivalTime(0), height(0), parent(nullptr) {}
 
 BlockTreeNode::BlockTreeNode(Block block, int height, time_t arrivalTime): block(Block(block)), height(height), arrivalTime(arrivalTime), parent(nullptr) {}
 
-BlockTreeNode::BlockTreeNode(const Block & block): block(Block(block)), parent(nullptr), height(0) {}
+BlockTreeNode::BlockTreeNode(const Block & block): block(Block(block)), parent(nullptr), height(0), arrivalTime(0) {}
 
-BlockTreeNode::BlockTreeNode(const BlockTreeNode & other): block(Block(other.block)), parent(other.parent), children(other.children), height(other.height) {}
+BlockTreeNode::BlockTreeNode(const BlockTreeNode & other): block(Block(other.block)), parent(other.parent), children(other.children), height(other.height), arrivalTime(other.arrivalTime) {}
 
 BlockTreeNode & BlockTreeNode::operator=(const BlockTreeNode & other) {
     this->block = other.block;
     this->parent = other.parent;
     this->children = other.children;
     this->height = other.height;
+    this->arrivalTime = other.arrivalTime;
     return *this;
 }
 
@@ -170,8 +171,11 @@ int BlockTree::addBlock(Block & block, time_t arrivalTime) {
     if (blockToNode.find(block.id) != blockToNode.end()) {
         return -1;
     }
-    BlockTreeNode * node = new BlockTreeNode(block);
     BlockTreeNode * parent = blockToNode[block.parentID];
+    if ( parent == nullptr ) {
+        return -1;
+    }
+    BlockTreeNode * node = new BlockTreeNode(block);
     node->parent = parent;
     node->height = parent->height + 1;
     if ( validateChain(node) ) {
@@ -268,16 +272,16 @@ void BlockTree::printTree(std::string filename) const {
 }
 
 void BlockTree::printSubTree(BlockTreeNode* node, std::ofstream & file) const {
-    file << "( " << node->block.id << " " << node->arrivalTime << std::endl;
+    file << "( " << node->block.id << " " << node->arrivalTime << '\n';
     for (BlockTreeNode* child : node->children) {
         printSubTree(child, file);
     }
-    file << ")" << std::endl;
+    file << ")" << '\n';
 }
 
 void BlockTree::printChain(BlockTreeNode* node) const {
     while (node) {
-        std::cout << node->block.id << std::endl;
+        std::cout << node->block.id << '\n';
         node = node->parent;
     }
 }
@@ -296,6 +300,8 @@ void BlockTree::exportToDot(const std::string & filename) const {
 
         file << "    \"" << node->block.id << "\" [label=\"Block " << node->block.id 
              << "\\nHeight: " << node->height 
+             << "\\nMiner ID: " << node->block.owner
+             << "\\nBlock Creation Time: " << node->block.timestamp
              << "\\nTimestamp: " << node->arrivalTime << "\"];\n";
 
         for (BlockTreeNode* child : node->children) {
@@ -308,9 +314,9 @@ void BlockTree::exportToDot(const std::string & filename) const {
     file << "}\n";
     file.close();
 
-    std::cout << "DOT file saved: " << filename << std::endl;
+    std::cout << "DOT file saved: " << filename << '\n';
 }
 
 void BlockTree::printBlock(BlockTreeNode* node, time_t arrivalTime) {
-    file << "Block ID: " << node->block.id << ", Arrival Time: " << arrivalTime << ", Parent ID: " << node->parent->block.id << std::endl;
+    file << "Block ID: " << node->block.id << ", Arrival Time: " << arrivalTime << ", Parent ID: " << node->parent->block.id << '\n';
 }

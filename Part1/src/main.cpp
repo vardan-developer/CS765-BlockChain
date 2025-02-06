@@ -2,9 +2,9 @@
 #include "sim.hpp"
 #include "utils.hpp"
 
-void printNetworkTopology(std::vector<std::vector<std::pair<minerID_t, std::pair<int, int>>>> networkTopology);
+void printNetworkTopology(std::vector<std::vector<std::pair<int, int>>> networkTopology);
 
-std::vector<std::vector<std::pair<minerID_t, std::pair<int, int>>>> networkTopology;
+std::vector<std::vector<std::pair<int, int>>> networkTopology;
 std::set<minerID_t> highCPUMiners;
 // networkTopology[i][j] = (neighborID, (rho_ij, c_ij))
 // latency = rho_ij + |m| * 1000 / c_ij + d_ij -> in milliseconds
@@ -28,15 +28,14 @@ int main(int argc, char *argv[])
     simulator.run();
 }
 
-void printNetworkTopology(std::vector<std::vector<std::pair<minerID_t, std::pair<int, int>>>> networkTopology)
+void printNetworkTopology(std::vector<std::vector<std::pair<int, int>>> networkTopology)
 {
     for (int i = 0; i < networkTopology.size(); i++)
     {
-        std::cout << "Miner " << i << " has neighbors: ";
         for (int j = 0; j < networkTopology[i].size(); j++)
         {
-            if (networkTopology[i][j].first == -1)continue;
-            std::cout << networkTopology[i][j].first << " ";
+            if (networkTopology[i][j].first < 0) continue;
+            std::cout << "Edge from (MinerID " << i << " --> MinerID " << j << "), Rho_ij = " << networkTopology[i][j].first << ", C_ij = " << networkTopology[i][j].second << '\n';
         }
     }
 }

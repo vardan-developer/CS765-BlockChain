@@ -1,12 +1,12 @@
 #include "block.hpp"
 
-Block::Block(): id(0), height(0), parentID(0), transactions(), timestamp(0) {}
+Block::Block(): id(0), height(0), parentID(0), transactions(), timestamp(0), owner(-1) {}
 
-Block::Block(blockID_t id, uint64_t height, blockID_t parentID, std::vector<Transaction> transactions, time_t timestamp): id(id), height(height), parentID(parentID), transactions(transactions), timestamp(timestamp) {}
+Block::Block(blockID_t id, uint64_t height, blockID_t parentID, std::vector<Transaction> transactions, time_t timestamp, minerID_t owner): id(id), height(height), parentID(parentID), transactions(transactions), timestamp(timestamp), owner(owner) {}
 
-Block::Block(blockID_t id, uint64_t height, blockID_t parentID, time_t timestamp): id(id), height(height), parentID(parentID), timestamp(timestamp) {}
+Block::Block(blockID_t id, uint64_t height, blockID_t parentID, time_t timestamp, minerID_t owner): id(id), height(height), parentID(parentID), timestamp(timestamp), owner(owner) {}
 
-Block::Block(const Block& block): id(block.id), height(block.height), parentID(block.parentID), transactions(block.transactions), timestamp(block.timestamp) {}
+Block::Block(const Block& block): id(block.id), height(block.height), parentID(block.parentID), transactions(block.transactions), timestamp(block.timestamp), owner(block.owner) {}
 
 Block& Block::operator=(const Block& block){
     this->id = block.id;
@@ -14,6 +14,7 @@ Block& Block::operator=(const Block& block){
     this->parentID = block.parentID;
     this->transactions = block.transactions;
     this->timestamp = block.timestamp;
+    this->owner = block.owner;
     return *this;
 }
 

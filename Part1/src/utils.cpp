@@ -194,7 +194,7 @@ std::vector<std::vector<minerID_t> > generate_graph(int n) {
     return adj;
 }
 
-std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > generateNetworkTopology(int n, float z0){
+std::vector<std::vector<std::pair<int, int> > > generateNetworkTopology(int n, float z0){
     std::vector<std::vector<minerID_t> > adj = generate_graph(n);
     std::vector<std::vector<minerID_t> > adj_matrix(n, std::vector<minerID_t>(n, -1));
     for(int i = 0; i < n; i++){
@@ -202,9 +202,9 @@ std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > generateN
             adj_matrix[i][adj[i][j]] = adj[i][j];
         }
     }
-    std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > networkTopology(n);
+    std::vector<std::vector<std::pair<int, int> > > networkTopology(n);
     for(int i = 0; i < n; i++){
-        networkTopology[i] = std::vector<std::pair<minerID_t, std::pair<int, int> > >(adj_matrix[i].size());
+        networkTopology[i] = std::vector<std::pair<int, int> > (adj_matrix[i].size());
     }
     std::set<minerID_t> fastMiners;
     std::set<minerID_t> slowMiners;
@@ -222,14 +222,14 @@ std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > generateN
             minerID_t u = i;
             minerID_t v = j;
             if(adj_matrix[i][j] == -1){
-                networkTopology[i][j] = std::make_pair(-1, std::make_pair(-1, -1));
+                networkTopology[i][j] = std::make_pair(-1, -1);
                 continue;
             }
             if(slowMiners.count(u) > 0 || slowMiners.count(v) > 0){
-                networkTopology[i][j] = std::make_pair(v, std::make_pair(getUniformRandom(10, 500), (5*1024)));
+                networkTopology[i][j] = std::make_pair(getUniformRandom(10, 500), (5*1024));
             }
             else{
-                networkTopology[i][j] = std::make_pair(v, std::make_pair(getUniformRandom(10, 500), (100*1024)));
+                networkTopology[i][j] = std::make_pair(getUniformRandom(10, 500), (100*1024));
             }
         }
     }

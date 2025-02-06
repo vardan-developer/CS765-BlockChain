@@ -1,7 +1,8 @@
 #include "miner.hpp"
+#include "def.hpp"
 #include "utils.hpp"
 
-extern std::vector<std::vector<std::pair<minerID_t, std::pair<int, int> > > > networkTopology;
+extern std::vector<std::vector<std::pair<int, int> > > networkTopology;
 
 Miner::Miner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock): id(id), blockTree(id, genesisBlock), totalMiners(totalMiners), txnInterval(txnInterval), blkInterval(blkInterval), processingTxnTime(-1), processingBlockID(-1) {}
 
@@ -74,7 +75,7 @@ std::vector<Event> Miner::genTransaction(time_t currentTime){
 
 std::vector<Event> Miner::genBlock(time_t currentTime){
     if (processingBlockID > 0) {
-        std::cout << "Miner: " << id << " Rejects Block Creation, Currently Processing Block ID: " << processingBlockID << std::endl;
+        // std::cout << "Miner: " << id << " Rejects Block Creation, Currently Processing Block ID: " << processingBlockID << std::endl;
         return std::vector<Event>();
     }
     double expDelay = getExponentialRandom(blkInterval);
@@ -90,12 +91,12 @@ std::vector<Event> Miner::genBlock(time_t currentTime){
 
     Transaction coinbase = Transaction(Counter::getTxnID(), TransactionType::COINBASE, id, id, 50);
     
-    Block* block = new Block(blockID, height, parentID, scheduledBlkTime); // add coinbase
+    Block* block = new Block(blockID, height, parentID, scheduledBlkTime, id); // add coinbase
     block->transactions.push_back(coinbase);
     if (totalTxn > 0){
-        int txnCount = getUniformRandom(0, std::min(100, totalTxn));
+        int txnCount = getUniformRandom(0, std::min(1000, totalTxn));
         selectedTxn = std::vector<Transaction>(txnCount);
-        for(int i = 0; i < txnCount; i++){
+        for(int i = 0; i < transactions.size() && block->transactions.size() < totalTxn; i++){
             block->transactions.push_back(transactions[i]);
             if (!blockTree.validateBlock(*block)){
                 block->transactions.pop_back();
@@ -105,7 +106,7 @@ std::vector<Event> Miner::genBlock(time_t currentTime){
             }
         }
     }
-    std::cout << "Miner: " << id << " Creates Block ID: " << blockID << ", Height: " << height << ", Parent ID: " << parentID << ", Timestamp: " << scheduledBlkTime << std::endl;
+    // std::cout << "Miner: " << id << " Creates Block ID: " << blockID << ", Height: " << height << ", Parent ID: " << parentID << ", Timestamp: " << scheduledBlkTime << std::endl;
     return {Event(EventType::BLOCK_CREATION, block, scheduledBlkTime, id, -1)};
 }
 
@@ -137,7 +138,7 @@ std::vector<Event> Miner::receiveBlock(Event event){
         // std::cout << "Block: " << event.block->id << ", Height: " << event.block->height << ", Parent ID: " << event.block->parentID << ", Timestamp: " << event.timestamp << std::endl;
         return std::vector<Event>();
     }
-    std::cout << "Block: " << event.block->id << ", Height: " << event.block->height << ", Parent ID: " << event.block->parentID << ", Timestamp: " << event.timestamp << std::endl;
+    // std::cout << "Block: " << event.block->id << ", Height: " << event.block->height << ", Parent ID: " << event.block->parentID << ", Timestamp: " << event.timestamp << std::endl;
 
     std::vector<Event> newEvents;
 
@@ -168,8 +169,8 @@ std::vector<Event> Miner::receiveBlock(Event event){
 
 std::vector<minerID_t> Miner::getNeighbors() {
     std::vector<minerID_t> neighbors;
-    for(auto neighbor: networkTopology[id]){
-        if ( neighbor.first >= 0 ) neighbors.push_back(neighbor.first);
+    for ( minerID_t neighbor_t = 0; neighbor_t < networkTopology[id].size(); neighbor_t++ ) {
+        if ( networkTopology[id][neighbor_t].first >= 0 ) neighbors.push_back(neighbor_t);
     }
     return neighbors;
 }
