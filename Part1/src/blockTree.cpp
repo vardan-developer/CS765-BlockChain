@@ -238,7 +238,15 @@ bool BlockTree::switchToLongestChain(Block & block, std::set<Transaction> & memP
     if ( node == nullptr || block.id == this->current->block.id ) {
         return false;
     }
-    if ( node->height > this->current->height ) {
+    
+    if ( node->parent == this->current ) {
+        this->current = node;
+        updateBalance(this->current);
+        for ( Transaction & txn : this->current->block.transactions ) {
+            memPool.erase(txn);
+        }
+        return true;
+    } else if ( node->height > this->current->height ) {
         std::cout << "Latest Node: " << node->block.id << '\n';
         BlockTreeNode * node1 = node, * node2 = this->current;
         std::set<Transaction> memPoolInsert, memPoolErase;
@@ -277,13 +285,6 @@ bool BlockTree::switchToLongestChain(Block & block, std::set<Transaction> & memP
         }
 
         this->current = node;
-        return true;
-    } else if ( node->parent == this->current ) {
-        this->current = node;
-        updateBalance(this->current);
-        for ( Transaction & txn : this->current->block.transactions ) {
-            memPool.erase(txn);
-        }
         return true;
     }
     return false;
