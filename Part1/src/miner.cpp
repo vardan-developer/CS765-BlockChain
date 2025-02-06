@@ -165,11 +165,11 @@ std::vector<Event> Miner::receiveBlock(Event event){
         newEvents.insert(newEvents.end(), genBlocks.begin(), genBlocks.end());
     }
 
-    else if ( blockTree.getCurrent().id == event.block->id ) {
-        processingBlockID = -1;
-        std::vector<Event> genBlocks = this->genBlock(event.timestamp);
-        newEvents.insert(newEvents.end(), genBlocks.begin(), genBlocks.end());
-    }
+    // else if ( blockTree.getCurrent().id == event.block->id ) {
+    //     processingBlockID = -1;
+    //     std::vector<Event> genBlocks = this->genBlock(event.timestamp);
+    //     newEvents.insert(newEvents.end(), genBlocks.begin(), genBlocks.end());
+    // }
 
     blkToMiner[event.block->id].insert(event.owner);
     std::vector<minerID_t> neighbors = getNeighbors();
