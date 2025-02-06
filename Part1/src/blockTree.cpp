@@ -224,7 +224,7 @@ void BlockTree::deProcessTransactions(std::vector<Transaction> & transactions) {
     }
 }
 
-int BlockTree::getBalance(minerID_t id = -1) {
+int BlockTree::getBalance(minerID_t id) {
     if (id == -1) {
         return balanceMap[id];
     }
