@@ -14,6 +14,8 @@ struct ProgramSettings {
     float z1;         // A float between 0 and 1
     double Ttx;       // A floating point value (Ttx)
     int I;            // An integer argument I
+    long long blkLimit;
+    time_t timeLimit;
 };
 
 // Parses command line arguments.

@@ -51,7 +51,6 @@ BlockTree::~BlockTree() {
 BlockTree::BlockTree(const BlockTree & other) {
     this->id = other.id;
     this->genesis = other.genesis ? new BlockTreeNode(other.genesis->block, other.genesis->height, other.genesis->arrivalTime) : nullptr;
-    // this->current = other.current ? new BlockTreeNode(other.current->block, other.current->height, other.current->arrivalTime) : nullptr;
     this->genesis = deepCopy(genesis, other.genesis);
     for ( auto & [minerId, balance] : other.balanceMap ) {
         this->balanceMap[minerId] = balance;
@@ -63,7 +62,6 @@ BlockTree::BlockTree(const BlockTree & other) {
 BlockTree & BlockTree::operator = (const BlockTree & other) {
     this->id = other.id;
     this->genesis = other.genesis ? new BlockTreeNode(other.genesis->block, other.genesis->height, other.genesis->arrivalTime) : nullptr;
-    // this->current = other.current ? new BlockTreeNode(other.current->block, other.current->height, other.current->arrivalTime) : nullptr;
     this->genesis = deepCopy(genesis, other.genesis);
     for ( auto & [minerId, balance] : other.balanceMap ) {
         this->balanceMap[minerId] = balance;
@@ -101,10 +99,9 @@ BlockTree & BlockTree::operator = (BlockTree && other) {
 }
 
 BlockTreeNode * BlockTree::deepCopy(BlockTreeNode * root, BlockTreeNode * other) {
-    if ( ! other ) {
+    if ( ! other || ! root ) {
         return root;
     }
-    // root = new BlockTreeNode(other->block, other->height, other->arrivalTime);
     this->blockToNode[other->block.id] = root;
     for ( BlockTreeNode * child : other->children ) {
         if ( child ) {
@@ -142,7 +139,11 @@ bool BlockTree::validateChain(BlockTreeNode * node) {
         spendingMap[txn.sender] += txn.amount;
     }
     for ( auto & [minerId, spendingAmount] : spendingMap ) {
-        if ( balanceMap[minerId] < spendingAmount ) {
+        if ( balanceMap.find(minerId) == balanceMap.end() ) {
+            std::cout << "Miner " << minerId << " not registered in balanceMap\n";
+        }
+        if (balanceMap[minerId] < spendingAmount ) {
+            std::cout << "Miner " << minerId << " spending " << spendingAmount << " but only has " << balanceMap[minerId] << '\n';
             return false;
         }
     }
@@ -153,13 +154,20 @@ bool BlockTree::validateBlock(Block & block) {
     BlockTreeNode * node = new BlockTreeNode(block);
     node->parent = this->current;
     node->height = this->current->height + 1;
-    return validateChain(node);
+    bool returnValue = validateChain(node);
+    delete node;
+    return returnValue;
 }
 
 void BlockTree::updateBalance(BlockTreeNode * node) {
     for ( Transaction & txn : node->block.transactions ) {
+        if ( balanceMap.find(txn.sender) == balanceMap.end() ) balanceMap[txn.sender] = 0;
+        if ( balanceMap.find(txn.receiver) == balanceMap.end() ) balanceMap[txn.receiver] = 0;
         if ( txn.type != TransactionType::COINBASE ) {
             balanceMap[txn.sender] -= txn.amount;
+            if ( balanceMap[txn.sender] < 0 ) std::cout << "Balance of Miner " << txn.sender << " went negative due to switch due to block " << node->block.id << '\n';
+            if ( id == 29 && txn.sender == 49 ) std::cout << "Balance updated to " << balanceMap[txn.sender] << " on block " << node->block.id << '\n';
+            if ( id == 29 && txn.receiver == 49 ) std::cout << "Balance updated to " << balanceMap[txn.sender] << " on block " << node->block.id << '\n';
             balanceMap[txn.receiver] += txn.amount;
         } else {
             balanceMap[txn.receiver] += txn.amount;
@@ -175,17 +183,18 @@ int BlockTree::addBlock(Block & block, time_t arrivalTime) {
     if ( parent == nullptr ) {
         return -1;
     }
+    std::cout << "Miner " << id << " trying to add block " << block.id << '\n';
     BlockTreeNode * node = new BlockTreeNode(block);
     node->parent = parent;
     node->height = parent->height + 1;
     if ( validateChain(node) ) {
         blockToNode[block.id] = node;
         parent->children.push_back(node);
-        updateBalance(node);
         printBlock(node, arrivalTime);
         node->arrivalTime = arrivalTime;
         return std::max(node->height, this->current->height);
     } else {
+        std::cout << "Block " << node->block.id << " Rejected by Miner " << this->id << '\n';
         delete node;
         return -1;
     }
@@ -195,8 +204,11 @@ void BlockTree::processTransaction(std::vector<Transaction> & transactions) {
     for ( Transaction & txn : transactions ) {
         if ( txn.type != TransactionType::COINBASE ) {
             balanceMap[txn.sender] -= txn.amount;
+            if ( balanceMap[txn.sender] < 0 ) std::cout << "Balance of Miner " << txn.sender << " went negative in ProcessTransaction\n"; 
         }
         balanceMap[txn.receiver] += txn.amount;
+        if ( id == 29 && txn.sender == 49 ) std::cout << "ProcessTransaction: Balance updated to " << balanceMap[txn.sender] << '\n';
+        if ( id == 29 && txn.receiver == 49 ) std::cout << "ProcessTransaction: Balance updated to " << balanceMap[txn.receiver] << '\n';
     }
 }
 
@@ -206,10 +218,14 @@ void BlockTree::deProcessTransactions(std::vector<Transaction> & transactions) {
             balanceMap[txn.sender] += txn.amount;
         }
         balanceMap[txn.receiver] -= txn.amount;
+        if ( balanceMap[txn.sender] < 0 ) std::cout << "Balance of Miner " << txn.sender << " went negative in deProcessTransactions\n"; 
+        if ( id == 29 && txn.sender == 49 ) std::cout << "DeProcessTransaction: Balance updated to " << balanceMap[txn.sender] << '\n';
+        if ( id == 29 && txn.receiver == 49 ) std::cout << "DeProcessTransaction: Balance updated to " << balanceMap[txn.receiver] << '\n';
     }
 }
 
 int BlockTree::getBalance() {
+    if ( balanceMap.find(id) == balanceMap.end() ) balanceMap[id] = 0;
     return balanceMap[id];
 }
 
@@ -223,27 +239,34 @@ bool BlockTree::switchToLongestChain(Block & block, std::set<Transaction> & memP
         return false;
     }
     if ( node->height > this->current->height ) {
+        std::cout << "Latest Node: " << node->block.id << '\n';
         BlockTreeNode * node1 = node, * node2 = this->current;
         std::set<Transaction> memPoolInsert, memPoolErase;
-        while ( node1->height != node2->height ) {
-            if ( node1->height > node2->height ) {
-                memPoolInsert.insert(node1->block.transactions.begin(), node1->block.transactions.end());
+        // memPoolErase.insert(node->block.transactions.begin(), node->block.transactions.end());
+        // while ( node1->height != node2->height ) {
+        while ( node1->height > node2->height ) {
+            // if ( node1->height > node2->height ) {
+                memPoolErase.insert(node1->block.transactions.begin(), node1->block.transactions.end());
                 node1 = node1->parent;
-                deProcessTransactions(node1->block.transactions);
-            } else {
-                memPoolErase.insert(node2->block.transactions.begin(), node2->block.transactions.end());
-                node2 = node2->parent;
-                processTransaction(node2->block.transactions);
-            }
+                std::cout << "ProcessingTransactions in Block " << node1->block.id << '\n';
+                processTransaction(node1->block.transactions);
+            // }
+            //  else {
+            //     memPoolInsert.insert(node2->block.transactions.begin(), node2->block.transactions.end());
+            //     node2 = node2->parent;
+            //     deProcessTransactions(node2->block.transactions);
+            // }
         }
         while ( node1 != node2 ) {
-            memPoolInsert.insert(node1->block.transactions.begin(), node1->block.transactions.end());
-            deProcessTransactions(node1->block.transactions);
+            memPoolErase.insert(node1->block.transactions.begin(), node1->block.transactions.end());
+            std::cout << "ProcessingTransactions in Block " << node1->block.id << '\n';
+            processTransaction(node1->block.transactions);
             node1 = node1->parent;
             
-            memPoolErase.insert(node2->block.transactions.begin(), node2->block.transactions.end());
+            memPoolInsert.insert(node2->block.transactions.begin(), node2->block.transactions.end());
             node2 = node2->parent;
-            processTransaction(node2->block.transactions);
+            std::cout << "DeProcessingTransactions in Block " << node2->block.id << '\n';
+            deProcessTransactions(node2->block.transactions);
         }
 
         for ( Transaction txn : memPoolInsert ) {
@@ -257,6 +280,10 @@ bool BlockTree::switchToLongestChain(Block & block, std::set<Transaction> & memP
         return true;
     } else if ( node->parent == this->current ) {
         this->current = node;
+        updateBalance(this->current);
+        for ( Transaction & txn : this->current->block.transactions ) {
+            memPool.erase(txn);
+        }
         return true;
     }
     return false;

@@ -96,7 +96,7 @@ std::vector<Event> Miner::genBlock(time_t currentTime){
     if (totalTxn > 0){
         int txnCount = getUniformRandom(0, std::min(Kb-1, totalTxn));
         selectedTxn = std::vector<Transaction>(txnCount);
-        for(int i = 0; i < transactions.size() && block->transactions.size() < totalTxn; i++){
+        for(int i = 0; i < transactions.size() && block->transactions.size() < txnCount; i++){
             block->transactions.push_back(transactions[i]);
             if (!blockTree.validateBlock(*block)){
                 block->transactions.pop_back();
@@ -155,11 +155,11 @@ std::vector<Event> Miner::receiveBlock(Event event){
         newEvents.insert(newEvents.end(), genBlocks.begin(), genBlocks.end());
     }
 
-    else if ( blockTree.getCurrent().id == event.block->id ) {
-        processingBlockID = -1;
-        std::vector<Event> genBlocks = this->genBlock(event.timestamp);
-        newEvents.insert(newEvents.end(), genBlocks.begin(), genBlocks.end());
-    }
+    // else if ( blockTree.getCurrent().id == event.block->id ) {
+    //     processingBlockID = -1;
+    //     std::vector<Event> genBlocks = this->genBlock(event.timestamp);
+    //     newEvents.insert(newEvents.end(), genBlocks.begin(), genBlocks.end());
+    // }
 
     blkToMiner[event.block->id].insert(event.owner);
     std::vector<minerID_t> neighbors = getNeighbors();

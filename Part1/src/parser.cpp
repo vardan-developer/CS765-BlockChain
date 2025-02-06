@@ -1,8 +1,10 @@
 #include "parser.hpp"
+#include <climits>
+#include <ctime>
 
 
 bool parseArgs(int argc, char* argv[], ProgramSettings &settings, std::string &errorMsg) {
-    bool totalNodes_set = false, z0_set = false, z1_set = false, Ttx_set = false, I_set = false;
+    bool totalNodes_set = false, z0_set = false, z1_set = false, Ttx_set = false, I_set = false, blkLimit_set = false, timeLimit_set = false;
     
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -66,6 +68,30 @@ bool parseArgs(int argc, char* argv[], ProgramSettings &settings, std::string &e
                 errorMsg = "Error: Invalid integer for --blk-time";
                 return false;
             }
+        } else if (arg == "--blk-limit") {
+            if (i + 1 >= argc) {
+                errorMsg = "Error: Missing value for --blk-limit";
+                return false;
+            }
+            try {
+                settings.blkLimit = std::stoi(argv[++i]);
+                blkLimit_set = true;
+            } catch (const std::exception &e) {
+                errorMsg = "Error: Invalid integer for --blk-limit";
+                return false;
+            }
+        } else if (arg == "--time-limit") {
+            if (i + 1 >= argc) {
+                errorMsg = "Error: Missing value for --time-limit";
+                return false;
+            }
+            try {
+                settings.timeLimit = std::stoi(argv[++i]);
+                timeLimit_set = true;
+            } catch (const std::exception &e) {
+                errorMsg = "Error: Invalid integer for --time-limit";
+                return false;
+            }
         } else {
             errorMsg = "Error: Unknown parameter: " + arg;
             return false;
@@ -73,10 +99,13 @@ bool parseArgs(int argc, char* argv[], ProgramSettings &settings, std::string &e
     }
     
     // Check that all required parameters were provided.
-    if (!totalNodes_set || !z0_set || !z1_set || !Ttx_set || !I_set) {
+    if (!totalNodes_set || !z0_set || !z1_set || !Ttx_set || !I_set || ( !blkLimit_set && !timeLimit_set) ) {
         errorMsg = "Error: One or more required parameters are missing.";
         return false;
     }
+
+    if ( ! timeLimit_set ) settings.timeLimit = LONG_LONG_MAX;
+    if ( ! blkLimit_set ) settings.blkLimit = LONG_LONG_MAX;
     
     // Validate that z0 and z1 are between 0 and 1.
     if (settings.z0 < 0.0f || settings.z0 > 1.0f) {

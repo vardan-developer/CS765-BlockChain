@@ -75,6 +75,42 @@ struct Event {
         return *this;
     }
 
+    Event(Event && other) {
+        type = other.type;
+        timestamp = other.timestamp;
+        owner = other.owner;
+        receiver = other.receiver;
+        if (other.block != nullptr) {
+            this->block = other.block;
+            other.block = nullptr;
+            this->transaction = nullptr;
+        } else {
+            this->transaction = other.transaction;
+            other.transaction = nullptr;
+            this->block = nullptr;
+        }
+    }
+
+    Event & operator = (Event && other) {
+        if (this==&other) {
+            return *this;
+        }
+        type = other.type;
+        timestamp = other.timestamp;
+        owner = other.owner;
+        receiver = other.receiver;
+        if (other.block != nullptr) {
+            this->block = other.block;
+            other.block = nullptr;
+            this->transaction = nullptr;
+        } else {
+            this->transaction = other.transaction;
+            other.transaction = nullptr;
+            this->block = nullptr;
+        }
+        return *this;
+    }
+
     bool operator < (const Event& other) const {
         return timestamp < other.timestamp;
     }
@@ -92,7 +128,13 @@ struct Event {
     }
 
     ~Event() {
-        block ? delete block : delete transaction;
+        // block ? delete block : delete transaction;
+        if ( block ) {
+            delete block;
+        }
+        if ( transaction ) {
+            delete transaction;
+        }
     }
     
 };

@@ -1,5 +1,8 @@
 #include "utils.hpp"
 
+// std::random_device rd;
+// std::mt19937 gen(rd()); 
+std::mt19937 gen(25); 
 
 // Add these definitions before the Counter methods
 blockID_t Counter::blockIDCount = 1;
@@ -20,8 +23,8 @@ double getExponentialRandom(double mean) {
     }
 
     // Create a random device and a random number generator
-    std::random_device rd;
-    std::mt19937 gen(rd());  
+    // std::random_device rd;
+    // std::mt19937 gen(rd());  
 
     // Create an exponential distribution with lambda = 1/mean
     std::exponential_distribution<double> distribution(1.0 / mean);
@@ -38,8 +41,8 @@ double getUniformRandom(double a, double b) {
     }
 
     // Create a random device and a random number generator
-    std::random_device rd;
-    std::mt19937 gen(rd());  
+    // std::random_device rd;
+    // std::mt19937 gen(rd());  
 
     // Create a uniform distribution between [a, b]
     std::uniform_real_distribution<double> distribution(a, b);
@@ -106,7 +109,9 @@ std::vector<std::vector<minerID_t> > generate_graph(int n) {
             }
         }
 
-        shuffle(stubs.begin(), stubs.end(), std::mt19937(std::random_device()()));
+        // shuffle(stubs.begin(), stubs.end(), std::mt19937(std::random_device()()));
+
+        shuffle(stubs.begin(), stubs.end(), gen);
 
         std::vector<std::vector<minerID_t> > adj(n);
         std::unordered_set<std::pair<minerID_t, minerID_t>, pair_hash> edges;
@@ -174,7 +179,9 @@ std::vector<std::vector<minerID_t> > generate_graph(int n) {
         }
     }
 
-    shuffle(possible_edges.begin(), possible_edges.end(), std::mt19937(std::random_device()()));
+    // shuffle(possible_edges.begin(), possible_edges.end(), std::mt19937(std::random_device()()));
+
+    shuffle(possible_edges.begin(), possible_edges.end(), gen);
 
     std::vector<minerID_t> current_degrees(n);
     for (minerID_t i = 0; i < n; ++i)

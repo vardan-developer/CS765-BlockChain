@@ -5,7 +5,7 @@
 extern std::vector<std::vector<std::pair<int, int> > > networkTopology;
 extern std::set<minerID_t> highCPUMiners;
 
-Simulator::Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit){ // received in ms
+Simulator::Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit, long long blkCount){ // received in ms
     totalMiners = n;
     txnInterval = txnInterval;
     blkInterval = blkInterval; // this is I for each miner it will be I/(fraction of hashing power)
@@ -22,6 +22,7 @@ Simulator::Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit){
     }
     std::cout << n << " Miners initialized\n";
     this->timeLimit = timeLimit;
+    this->blkCount = blkCount;
 }
 
 Simulator::~Simulator(){
@@ -38,7 +39,9 @@ void Simulator::run(){
         events.pop();
         processEvent(event);
         if ( this->currentTime > this->timeLimit) break;
-    } while( true );
+        // std::cout << this->currentTime << std::endl;
+        
+    } while( this->blkCount );
 }
 
 void Simulator::getEvents(){
@@ -96,6 +99,8 @@ void Simulator::processEvent(Event event){
         case EventType::BLOCK_CREATION: {
             if ( miners[event.owner]->confirmBlock(event) ) {
                 addEvent(Event(EventType::BROADCAST_BLOCK, event.block, currentTime, event.owner, 0));
+                this->blkCount--;
+                std::cout << "Block " << event.block->id << " Confirmed by Miner" << event.block->owner << '\n';
             }
             break;
         }

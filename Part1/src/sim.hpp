@@ -14,10 +14,11 @@ private:
     int txnInterval;
     int blkInterval;
     time_t timeLimit;
+    long long blkCount;
     Block createGenesisBlock();
     
 public:
-    Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit = 10 * 60 * 1000);
+    Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit = 10 * 60 * 1000, long long blkCount = 100);
     ~Simulator();
     void run();
     void getEvents();
