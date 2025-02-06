@@ -226,10 +226,10 @@ std::vector<std::vector<std::pair<int, int> > > generateNetworkTopology(int n, f
                 continue;
             }
             if(slowMiners.count(u) > 0 || slowMiners.count(v) > 0){
-                networkTopology[i][j] = std::make_pair(getUniformRandom(10, 500), (5*1024));
+                networkTopology[i][j] = std::make_pair(getUniformRandom(10, 500), (5*Mb));
             }
             else{
-                networkTopology[i][j] = std::make_pair(getUniformRandom(10, 500), (100*1024));
+                networkTopology[i][j] = std::make_pair(getUniformRandom(10, 500), (100*Mb));
             }
         }
     }

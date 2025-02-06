@@ -7,7 +7,3 @@ Transaction::Transaction(txnID_t id, TransactionType type, minerID_t sender, min
     this->receiver = receiver;
     this->amount = amount;
 }
-
-size_t Transaction::dataSize() const {
-    return sizeof(Transaction);
-}

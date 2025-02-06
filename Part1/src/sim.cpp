@@ -78,12 +78,12 @@ void Simulator::processEvent(Event event){
     currentTime = event.timestamp;
     switch(event.type){
         case EventType::SEND_BROADCAST_TRANSACTION: {
-            time_t latency = networkTopology[event.owner][event.receiver].first + ceil(getExponentialRandom(96000.0/networkTopology[event.owner][event.receiver].second)) + ceil((event.transaction->dataSize()*1000/1024.0)/networkTopology[event.owner][event.receiver].second);
+            time_t latency = networkTopology[event.owner][event.receiver].first + ceil(getExponentialRandom(96.0 * Kb * 1000/networkTopology[event.owner][event.receiver].second)) + ceil((Kb * 8.0 * 1000)/networkTopology[event.owner][event.receiver].second);
             addEvent(Event(EventType::RECEIVE_BROADCAST_TRANSACTION, event.transaction, currentTime + latency, event.owner, event.receiver));
             break;
         }
         case EventType::SEND_BROADCAST_BLOCK: {
-            time_t latency = networkTopology[event.owner][event.receiver].first + ceil(getExponentialRandom(96000.0/networkTopology[event.owner][event.receiver].second)) + ceil((event.block->dataSize()*1000/1024.0)/networkTopology[event.owner][event.receiver].second);
+            time_t latency = networkTopology[event.owner][event.receiver].first + ceil(getExponentialRandom(96.0 * Kb * 1000/networkTopology[event.owner][event.receiver].second)) + ceil((event.block->dataSize() * 1000.0)/networkTopology[event.owner][event.receiver].second);
             addEvent(Event(EventType::RECEIVE_BROADCAST_BLOCK, event.block, currentTime + latency, event.owner, event.receiver));
             break;
         }

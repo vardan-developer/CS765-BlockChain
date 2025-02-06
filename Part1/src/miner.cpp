@@ -89,12 +89,12 @@ std::vector<Event> Miner::genBlock(time_t currentTime){
     int totalTxn = transactions.size();
     std::vector<Transaction> selectedTxn;
 
-    Transaction coinbase = Transaction(Counter::getTxnID(), TransactionType::COINBASE, id, id, 50);
+    Transaction coinbase = Transaction(Counter::getTxnID(), TransactionType::COINBASE, id, id, COINBASE_REWARD);
     
     Block* block = new Block(blockID, height, parentID, scheduledBlkTime, id); // add coinbase
     block->transactions.push_back(coinbase);
     if (totalTxn > 0){
-        int txnCount = getUniformRandom(0, std::min(1000, totalTxn));
+        int txnCount = getUniformRandom(0, std::min(Kb-1, totalTxn));
         selectedTxn = std::vector<Transaction>(txnCount);
         for(int i = 0; i < transactions.size() && block->transactions.size() < totalTxn; i++){
             block->transactions.push_back(transactions[i]);
@@ -111,6 +111,10 @@ std::vector<Event> Miner::genBlock(time_t currentTime){
 }
 
 std::vector<Event> Miner::receiveTransactions(Event event){
+
+    if ( ! this->txnToMiner[event.transaction->id].empty() ) {
+        return std::vector<Event> ();
+    }
 
     memPool.insert(*(event.transaction));
     std::vector<minerID_t> neighbors = getNeighbors();
@@ -133,6 +137,9 @@ std::vector<Event> Miner::receiveBlock(Event event){
 
     // printMiner();
 
+    if ( ! this->blkToMiner[event.block->id].empty() ) {
+        return std::vector<Event> ();
+    }
 
     if(blockTree.addBlock(*(event.block), event.timestamp) < 0){
         // std::cout << "Block: " << event.block->id << ", Height: " << event.block->height << ", Parent ID: " << event.block->parentID << ", Timestamp: " << event.timestamp << std::endl;

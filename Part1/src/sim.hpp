@@ -17,7 +17,7 @@ private:
     Block createGenesisBlock();
     
 public:
-    Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit = 50000);
+    Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit = 10 * 60 * 1000);
     ~Simulator();
     void run();
     void getEvents();

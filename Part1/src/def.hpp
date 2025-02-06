@@ -18,7 +18,8 @@ using minerID_t = long long int;
 using txnID_t = long long int;
 using blockID_t = long long int;
 
-
-
+const long long Mb = 1000000;
+const int Kb = 1000;
+const int COINBASE_REWARD = 50;
 
 #endif
