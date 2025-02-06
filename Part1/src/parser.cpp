@@ -1,7 +1,7 @@
 #include "parser.hpp"
 #include <climits>
 #include <ctime>
-
+#include "def.hpp"
 
 bool parseArgs(int argc, char* argv[], ProgramSettings &settings, std::string &errorMsg) {
     bool totalNodes_set = false, z0_set = false, z1_set = false, Ttx_set = false, I_set = false, blkLimit_set = false, timeLimit_set = false;
@@ -104,8 +104,8 @@ bool parseArgs(int argc, char* argv[], ProgramSettings &settings, std::string &e
         return false;
     }
 
-    if ( ! timeLimit_set ) settings.timeLimit = LONG_LONG_MAX;
-    if ( ! blkLimit_set ) settings.blkLimit = LONG_LONG_MAX;
+    if ( ! timeLimit_set ) settings.timeLimit = LONG_LONG_MAX_VAL;
+    if ( ! blkLimit_set ) settings.blkLimit = LONG_LONG_MAX_VAL;
     
     // Validate that z0 and z1 are between 0 and 1.
     if (settings.z0 < 0.0f || settings.z0 > 1.0f) {

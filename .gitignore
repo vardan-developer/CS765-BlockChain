@@ -1,3 +1,6 @@
 .vscode/
 a.out
 part1/scratch/
+*.dot
+*.o
+*.logs
