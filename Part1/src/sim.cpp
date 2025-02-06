@@ -1,5 +1,6 @@
 #include "sim.hpp"
 #include <ctime>
+#include "def.hpp"
 #include "utils.hpp"
 
 extern std::vector<std::vector<std::pair<int, int> > > networkTopology;
@@ -27,6 +28,11 @@ Simulator::Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit, 
 
 Simulator::~Simulator(){
     for ( Miner * miner : miners) {
+        bool fast = false;
+        for ( minerID_t miner_t = 0; miner_t < totalMiners; miner_t++) {
+            fast |= ( networkTopology[miner->getID()][miner_t].second == 100 * Mb );
+        }
+        miner->printSummary(fast, highCPUMiners.count(miner->getID()));
         delete miner;
     }
 }

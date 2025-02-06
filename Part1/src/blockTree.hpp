@@ -61,6 +61,7 @@ class BlockTree {
         void exportToDot(const std::string & filename) const;
         void printTree(std::string filename) const;
         void printChain(BlockTreeNode* node /* The bottom of the chain */) const; /* Prints the chain from the bottom to the genesis */
+        void printSummary(bool fast, bool highCpu, long long totalBlocksGenerated);
 };
 
 
