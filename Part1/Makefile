@@ -2,7 +2,7 @@
 
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall
+CXXFLAGS = -std=c++23 -Wall
 DEBUG = 1
 # If DEBUG=1 is passed in the command line, add the -g flag for debugging
 ifeq ($(DEBUG),1)
@@ -26,8 +26,8 @@ OBJS = $(SRCS:.cpp=.o)
 TARGET = sim
 
 run: all
-	./sim  --total-nodes 5 --slow 0.5 --low-cpu 0.5 --ttx-time 50000 --blk-time 600000 > miners.txt
-
+	./sim  --total-nodes 50 --slow 0.5 --low-cpu 0.5 --ttx-time 50000 --blk-time 60000 --blk-limit 1000 > miners.txt
+	dot -Tpng blockTree.dot -o blockchain.png
 # Default target: build the executable
 all: $(TARGET)
 

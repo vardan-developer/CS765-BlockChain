@@ -4,3 +4,6 @@ part1/scratch/
 *.dot
 *.o
 *.logs
+sim
+miners.txt
+*.png
