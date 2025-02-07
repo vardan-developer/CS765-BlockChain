@@ -16,6 +16,7 @@ private:
     time_t timeLimit;
     long long blkCount;
     Block createGenesisBlock();
+    void generateGraphViz(const std::string& filename = "peerGraph.dot");
     
 public:
     Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit = 10 * 60 * 1000, long long blkCount = 100);

@@ -4,6 +4,7 @@
 #include "block.hpp"
 #include "def.hpp"
 #include "transaction.hpp"
+#include <ctime>
 #include <map>
 #include <vector>
 #include <set>
@@ -42,6 +43,7 @@ class BlockTree {
         void printSubTree(BlockTreeNode* node, std::ofstream & file) const;
         void printBlock(BlockTreeNode* node, time_t arrivalTime) ;
         std::ofstream file;   
+        std::set<std::pair<Block, time_t>> cachedChildren;
 
     public:
         BlockTree();
@@ -61,6 +63,8 @@ class BlockTree {
         void exportToDot(const std::string & filename) const;
         void printTree(std::string filename) const;
         void printChain(BlockTreeNode* node /* The bottom of the chain */) const; /* Prints the chain from the bottom to the genesis */
+        void printSummary(bool fast, bool highCpu, long long totalBlocksGenerated);
+        Block addCachedChild();
 };
 
 

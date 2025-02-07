@@ -4,6 +4,13 @@ part1/scratch/
 *.dot
 *.o
 *.logs
+<<<<<<< HEAD
 sim
 miners.txt
 *.png
+=======
+logs/
+logs/*
+graphs/
+graphs/*
+>>>>>>> df9b2dcb3c55bbe6ab06c93e84962c92e23196b0

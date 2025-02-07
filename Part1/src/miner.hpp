@@ -22,6 +22,7 @@ private:
     int totalMiners;
     int txnInterval;
     int blkInterval;
+    int totalBlocksGenerated;
     
 public:
     Miner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock);
@@ -40,6 +41,7 @@ public:
     bool confirmBlock(Event event);
     int getID() const;
     void printMiner();
+    void printSummary(bool fast, bool high);
 };
 
 

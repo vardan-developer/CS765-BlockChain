@@ -1,8 +1,10 @@
 #include "utils.hpp"
 
-// std::random_device rd;
-// std::mt19937 gen(rd()); 
-std::mt19937 gen(25); 
+std::random_device rd;
+std::mt19937 gen(rd()); 
+// std::mt19937 gen(25); 
+std::set<minerID_t> fastMiners;
+std::set<minerID_t> slowMiners;
 
 // Add these definitions before the Counter methods
 blockID_t Counter::blockIDCount = 1;
@@ -17,14 +19,19 @@ txnID_t Counter::getTxnID(){
 }
 
 
+std::vector<int> getRandomPermutation(int n) {
+    std::vector<int> perm(n);
+    // Initialize with 0 to n-1
+    std::iota(perm.begin(), perm.end(), 0);
+    // Shuffle using the existing random generator
+    std::shuffle(perm.begin(), perm.end(), gen);
+    return perm;
+}
+
 double getExponentialRandom(double mean) {
     if (mean <= 0) {
         throw std::invalid_argument("Mean must be greater than zero.");
     }
-
-    // Create a random device and a random number generator
-    // std::random_device rd;
-    // std::mt19937 gen(rd());  
 
     // Create an exponential distribution with lambda = 1/mean
     std::exponential_distribution<double> distribution(1.0 / mean);
@@ -39,11 +46,7 @@ double getUniformRandom(double a, double b) {
     if (a == b) {
         return a;
     }
-
-    // Create a random device and a random number generator
-    // std::random_device rd;
-    // std::mt19937 gen(rd());  
-
+    
     // Create a uniform distribution between [a, b]
     std::uniform_real_distribution<double> distribution(a, b);
 
@@ -108,8 +111,6 @@ std::vector<std::vector<minerID_t> > generate_graph(int n) {
                 stubs.push_back(i);
             }
         }
-
-        // shuffle(stubs.begin(), stubs.end(), std::mt19937(std::random_device()()));
 
         shuffle(stubs.begin(), stubs.end(), gen);
 
@@ -213,15 +214,17 @@ std::vector<std::vector<std::pair<int, int> > > generateNetworkTopology(int n, f
     for(int i = 0; i < n; i++){
         networkTopology[i] = std::vector<std::pair<int, int> > (adj_matrix[i].size());
     }
-    std::set<minerID_t> fastMiners;
-    std::set<minerID_t> slowMiners;
-    for(int i = 0; i < n; i++){
-        if(getUniformRandom(0, 1) < z0){
-            fastMiners.insert(i);
-        }
-        else{
-            slowMiners.insert(i);
-        }
+
+    fastMiners.clear();
+    slowMiners.clear();
+
+    std::vector<int> perm = getRandomPermutation(n);
+
+    for(int i = 0; i < z0 * n; i++){
+        slowMiners.insert(perm[i]);
+    }
+    for(int i = z0*n; i < n; i++) {
+        fastMiners.insert(perm[i]);
     }
 
     for(int i = 0; i < n; i++){
@@ -245,10 +248,9 @@ std::vector<std::vector<std::pair<int, int> > > generateNetworkTopology(int n, f
 
 std::set<minerID_t> getHighCPUMiners(int n, float z1){
     std::set<minerID_t> highCPUMiners;
-    for(int i = 0; i < n; i++){
-        if(getUniformRandom(0, 1) > z1){
-            highCPUMiners.insert(i);
-        }
+    std::vector<int> perm = getRandomPermutation(n);
+    for(int i = 0; i < (1-z1) * n; i++){
+        highCPUMiners.insert(perm[i]);
     }
     return highCPUMiners;   
 }

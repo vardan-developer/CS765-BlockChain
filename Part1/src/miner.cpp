@@ -4,9 +4,9 @@
 
 extern std::vector<std::vector<std::pair<int, int> > > networkTopology;
 
-Miner::Miner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock): id(id), blockTree(id, genesisBlock), totalMiners(totalMiners), txnInterval(txnInterval), blkInterval(blkInterval), processingTxnTime(-1), processingBlockID(-1) {}
+Miner::Miner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock): id(id), blockTree(id, genesisBlock), totalMiners(totalMiners), txnInterval(txnInterval), blkInterval(blkInterval), processingTxnTime(-1), processingBlockID(-1), totalBlocksGenerated(0) {}
 
-Miner::Miner(const Miner& other): id(other.id), blockTree(BlockTree(other.blockTree)), totalMiners(other.totalMiners), txnInterval(other.txnInterval), blkInterval(other.blkInterval), processingTxnTime(other.processingTxnTime), processingBlockID(other.processingBlockID) {}
+Miner::Miner(const Miner& other): id(other.id), blockTree(BlockTree(other.blockTree)), totalMiners(other.totalMiners), txnInterval(other.txnInterval), blkInterval(other.blkInterval), processingTxnTime(other.processingTxnTime), processingBlockID(other.processingBlockID), totalBlocksGenerated(other.totalBlocksGenerated) {}
 
 Miner& Miner::operator=(const Miner& other){
     this->id = other.id;
@@ -16,6 +16,7 @@ Miner& Miner::operator=(const Miner& other){
     this->blkInterval = other.blkInterval;
     this->processingTxnTime = other.processingTxnTime;
     this->processingBlockID = other.processingBlockID;
+    this->totalBlocksGenerated = other.totalBlocksGenerated;
     return *this;
 }
 
@@ -29,6 +30,7 @@ Miner& Miner::operator=(const Miner&& other){
     this->blkInterval = other.blkInterval;
     this->processingTxnTime = other.processingTxnTime;
     this->processingBlockID = other.processingBlockID;
+    this->totalBlocksGenerated = other.totalBlocksGenerated;
     return *this;
 }
 
@@ -116,6 +118,7 @@ std::vector<Event> Miner::genBlock(time_t currentTime){
             }
         }
     }
+    this->totalBlocksGenerated++;
     // std::cout << "Miner: " << id << " Creates Block ID: " << blockID << ", Height: " << height << ", Parent ID: " << parentID << ", Timestamp: " << scheduledBlkTime << std::endl;
     return {Event(EventType::BLOCK_CREATION, block, scheduledBlkTime, id, -1)};
 }
@@ -159,7 +162,16 @@ std::vector<Event> Miner::receiveBlock(Event event){
 
     std::vector<Event> newEvents;
 
-    if ( blockTree.switchToLongestChain(*(event.block), memPool) ) {
+    bool chainSwitched = blockTree.switchToLongestChain(*(event.block), memPool);
+
+    Block possibleAddedChild;
+
+    do {
+        possibleAddedChild = blockTree.addCachedChild();
+        if ( possibleAddedChild.id >= 0 ) chainSwitched |= blockTree.switchToLongestChain(possibleAddedChild, memPool);
+    } while ( possibleAddedChild.id >= 0 );
+
+    if ( chainSwitched ) {
         processingBlockID = -1;
         std::vector<Event> genBlocks = this->genBlock(event.timestamp);
         newEvents.insert(newEvents.end(), genBlocks.begin(), genBlocks.end());
@@ -215,5 +227,9 @@ void Miner::printMiner(){
 }
 
 Miner::~Miner(){
-    if ( id == 1 ) blockTree.exportToDot("blockTree.dot");
+    blockTree.exportToDot("blockTree-" + std::to_string(id) + ".dot");
+}
+
+void Miner::printSummary(bool fast, bool high) {
+    this->blockTree.printSummary(fast, high, this->totalBlocksGenerated);
 }

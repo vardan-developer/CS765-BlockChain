@@ -26,8 +26,16 @@ OBJS = $(SRCS:.cpp=.o)
 TARGET = sim
 
 run: all
-	./sim  --total-nodes 50 --slow 0.5 --low-cpu 0.5 --ttx-time 50000 --blk-time 60000 --blk-limit 1000 > miners.txt
-	dot -Tpng blockTree.dot -o blockchain.png
+	mkdir -p logs
+	./sim  --total-nodes 50 --slow 0.5 --low-cpu 0.5 --ttx-time 10000 --blk-time 600000 --time-limit 1000000 > miners.txt
+	mkdir -p graphs
+	dot -Tpng peerGraph.dot -o graphs/peerGraph.png
+	rm peerGraph.dot
+	for file in blockTree-*.dot; do \
+		dot -Tpng $$file -o graphs/$${file%.dot}.png; \
+		rm $$file; \
+	done
+
 # Default target: build the executable
 all: $(TARGET)
 
@@ -44,3 +52,4 @@ g: clean $(TARGET)
 # Clean up build files
 clean:
 	rm -f $(TARGET) $(OBJS) *.logs miners.txt
+	rm -rf logs/ graphs/
