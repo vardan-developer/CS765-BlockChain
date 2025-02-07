@@ -162,7 +162,16 @@ std::vector<Event> Miner::receiveBlock(Event event){
 
     std::vector<Event> newEvents;
 
-    if ( blockTree.switchToLongestChain(*(event.block), memPool) ) {
+    bool chainSwitched = blockTree.switchToLongestChain(*(event.block), memPool);
+
+    Block possibleAddedChild;
+
+    do {
+        possibleAddedChild = blockTree.addCachedChild();
+        if ( possibleAddedChild.id >= 0 ) chainSwitched |= blockTree.switchToLongestChain(possibleAddedChild, memPool);
+    } while ( possibleAddedChild.id >= 0 );
+
+    if ( chainSwitched ) {
         processingBlockID = -1;
         std::vector<Event> genBlocks = this->genBlock(event.timestamp);
         newEvents.insert(newEvents.end(), genBlocks.begin(), genBlocks.end());

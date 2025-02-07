@@ -1,8 +1,8 @@
 #include "utils.hpp"
 
-// std::random_device rd;
-// std::mt19937 gen(rd()); 
-std::mt19937 gen(25); 
+std::random_device rd;
+std::mt19937 gen(rd()); 
+// std::mt19937 gen(25); 
 
 // Add these definitions before the Counter methods
 blockID_t Counter::blockIDCount = 1;
