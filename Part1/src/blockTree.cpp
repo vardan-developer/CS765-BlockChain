@@ -21,11 +21,11 @@ BlockTreeNode & BlockTreeNode::operator=(const BlockTreeNode & other) {
     return *this;
 }
 
-BlockTree::BlockTree(): id(0), genesis(nullptr), current(nullptr), file(std::ofstream ("miner-" + std::to_string(id) + ".logs")) {}
+BlockTree::BlockTree(): id(0), genesis(nullptr), current(nullptr), file(std::ofstream ("logs/miner-" + std::to_string(id) + ".logs")) {}
 
-BlockTree::BlockTree(minerID_t id): id(id), genesis(nullptr), current(nullptr), file(std::ofstream ("miner-" + std::to_string(id) + ".logs")) {}
+BlockTree::BlockTree(minerID_t id): id(id), genesis(nullptr), current(nullptr), file(std::ofstream ("logs/miner-" + std::to_string(id) + ".logs")) {}
 
-BlockTree::BlockTree(minerID_t id, Block genesisBlock): id(id), genesis(new BlockTreeNode(genesisBlock)), current(genesis), file(std::ofstream ("miner-" + std::to_string(id) + ".logs")) {
+BlockTree::BlockTree(minerID_t id, Block genesisBlock): id(id), genesis(new BlockTreeNode(genesisBlock)), current(genesis), file(std::ofstream ("logs/miner-" + std::to_string(id) + ".logs")) {
     blockToNode[genesis->block.id] = genesis;
 }
 
@@ -56,7 +56,7 @@ BlockTree::BlockTree(const BlockTree & other) {
         this->balanceMap[minerId] = balance;
     }
     this->current = this->blockToNode[other.current->block.id];
-    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
+    this->file = std::ofstream ("logs/miner-" + std::to_string(id) + ".logs");
     this->cachedChildren = other.cachedChildren;
 }
 
@@ -68,7 +68,7 @@ BlockTree & BlockTree::operator = (const BlockTree & other) {
         this->balanceMap[minerId] = balance;
     }
     this->current = this->blockToNode[other.current->block.id];
-    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
+    this->file = std::ofstream ("logs/miner-" + std::to_string(id) + ".logs");
     this->cachedChildren = other.cachedChildren;
     return *this;
 }
@@ -83,7 +83,7 @@ BlockTree::BlockTree(BlockTree && other) {
     other.blockToNode.clear();
     this->balanceMap = other.balanceMap;
     other.balanceMap.clear();
-    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
+    this->file = std::ofstream ("logs/miner-" + std::to_string(id) + ".logs");
     this->cachedChildren = other.cachedChildren;
 }
 
@@ -97,7 +97,7 @@ BlockTree & BlockTree::operator = (BlockTree && other) {
     other.blockToNode.clear();
     this->balanceMap = other.balanceMap;
     other.balanceMap.clear();
-    this->file = std::ofstream ("miner-" + std::to_string(id) + ".logs");
+    this->file = std::ofstream ("logs/miner-" + std::to_string(id) + ".logs");
     this->cachedChildren = other.cachedChildren;
     return *this;
 }

@@ -227,7 +227,7 @@ void Miner::printMiner(){
 }
 
 Miner::~Miner(){
-    if ( id == 1 ) blockTree.exportToDot("blockTree.dot");
+    blockTree.exportToDot("blockTree-" + std::to_string(id) + ".dot");
 }
 
 void Miner::printSummary(bool fast, bool high) {

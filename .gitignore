@@ -4,3 +4,7 @@ part1/scratch/
 *.dot
 *.o
 *.logs
+logs/
+logs/*
+graphs/
+graphs/*
