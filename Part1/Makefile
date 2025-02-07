@@ -26,9 +26,10 @@ OBJS = $(SRCS:.cpp=.o)
 TARGET = sim
 
 run: all
+	rm -r logs graphs
 	mkdir -p logs
-	./sim  --total-nodes 50 --slow 0.5 --low-cpu 0.5 --ttx-time 10000 --blk-time 600000 --time-limit 1000000 > miners.txt
 	mkdir -p graphs
+	./sim  --total-nodes 10 --slow 0.5 --low-cpu 0.5 --ttx-time 10000 --blk-time 6000 --blk-limit 300 > miners.txt
 	dot -Tpng peerGraph.dot -o graphs/peerGraph.png
 	rm peerGraph.dot
 	for file in blockTree-*.dot; do \
