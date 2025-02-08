@@ -75,9 +75,6 @@ Simulator::~Simulator(){
     this->generateGraphViz();
     std::vector<float> fast_high, fast_low, slow_high, slow_low;
     float tempRatio;
-
-    std::cout<<"------------------------\n\n";
-    std::cout<<"Average Branch Length : "<< miners[0]->getAvgBranchLength() << '\n';
     for ( Miner * miner : miners) {
         bool fast = fastMiners.count(miner->getID());
         bool high = highCPUMiners.count(miner->getID());

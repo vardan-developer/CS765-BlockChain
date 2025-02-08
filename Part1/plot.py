@@ -1,78 +1,86 @@
 import os
 import re
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-# Parameters from the script
-slow_values = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-low_cpu_values = [0, 0.2, 0.4, 0.6, 0.8, 1.0]
+# Hardcoded parameter values
+LOW_CPU_VALUES = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+SLOW_VALUES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]  # Excluding 0 and 1.0
+BLK_TIME_VALUES = [50, 5000, 10000, 20000, 50000]
 
-# Data storage: {low_cpu_value: {slow_value: [ratios]}}
-lowcpu_data = {cpu: {s: [] for s in slow_values} for cpu in low_cpu_values}
-highcpu_data = {cpu: {s: [] for s in slow_values} for cpu in low_cpu_values}
-
-# Regex patterns
-ratio_pattern = re.compile(r"Ratio .*: ([\d\.]+)")
-category_pattern = re.compile(r"(Slow|Fast), (lowCpu|highCpu)")
-
-# Process log folders
-for cpu in low_cpu_values:
-    for sl in slow_values:
-        folder = f"logs_cpu_{cpu}_sl_{sl}"
-        if not os.path.exists(folder):
-            print(f"Warning: {folder} not found, skipping...")
-            continue
-        
-        ratios_lowcpu = []
-        ratios_highcpu = []
-        
-        # Process log files in folder
-        for log_file in os.listdir(folder):
-            log_path = os.path.join(folder, log_file)
-            if not os.path.isfile(log_path):
-                continue
-
-            with open(log_path, 'r') as file:
-                lines = file.readlines()
-                if len(lines) < 2:
-                    continue  # Ignore incomplete logs
-                
-                ratio_match = ratio_pattern.search(lines[-2])
-                category_match = category_pattern.search(lines[-1])
-                
-                if ratio_match and category_match:
-                    ratio = float(ratio_match.group(1))
-                    if ratio < 0:
-                        continue
-                    _, cpu_type = category_match.groups()
-
-                    if "lowCpu" in cpu_type:
-                        ratios_lowcpu.append(ratio)
-                    else:
-                        ratios_highcpu.append(ratio)
-
-        # Compute averages
-        if ratios_lowcpu:
-            lowcpu_data[cpu][sl] = np.mean(ratios_lowcpu)
-        if ratios_highcpu:
-            highcpu_data[cpu][sl] = np.mean(ratios_highcpu)
-
-# Plot function
-def plot_graph(data, title, filename, low_cpu_values=low_cpu_values):
-    plt.figure(figsize=(10, 6))
+def parse_logs(parent_directory):
+    data = {}
     
-    for cpu in low_cpu_values:
-        avg_ratios = [data[cpu][s] if isinstance(data[cpu][s], float) else 0 for s in slow_values]
-        plt.plot(slow_values, avg_ratios, marker='o', label=f"Low CPU = {cpu}")
+    for folder in os.listdir(parent_directory):
+        match = re.search(r'logs_cpu_(\d\.\d+)_sl_(\d\.\d+)_blk_(\d+)', folder)
+        if match:
+            cpu, sl, blk_time = map(float, match.groups())
+            blk_time = int(blk_time)
+            
+            if cpu in LOW_CPU_VALUES and sl in SLOW_VALUES and blk_time in BLK_TIME_VALUES:
+                folder_path = os.path.join(parent_directory, folder)
+                slow_ratios = []
+                fast_ratios = []
+                
+                for filename in os.listdir(folder_path):
+                    if filename.startswith("miner-") and filename.endswith(".logs"):
+                        with open(os.path.join(folder_path, filename), 'r') as f:
+                            content = f.read()
+                            gen_match = re.search(r'Total Blocks Generated: (\d+)', content)
+                            main_match = re.search(r'Total Blocks in Main Chain: (\d+)', content)
+                            miner_type_match = re.search(r'(Fast|Slow), (lowCpu|highCpu)', content)
+                            
+                            if gen_match and main_match and miner_type_match:
+                                total_gen = int(gen_match.group(1))
+                                total_main = int(main_match.group(1))
+                                miner_type = miner_type_match.group(1)
+                                
+                                if total_gen > 0:  # Avoid division by zero
+                                    ratio = total_main / total_gen
+                                    if miner_type == "Slow":
+                                        slow_ratios.append(ratio)
+                                    else:
+                                        fast_ratios.append(ratio)
 
-    plt.xlabel("Slow Value")
-    plt.ylabel("Average Ratio")
-    plt.title(title)
-    plt.legend()
-    plt.grid()
-    plt.savefig(filename)
-    plt.show()
+                                else:
+                                    if miner_type == "Slow":
+                                        slow_ratios.append(0)
+                                    else:
+                                        fast_ratios.append(0)
+                
+                if slow_ratios or fast_ratios:
+                    key = (cpu, blk_time, sl)
+                    data[key] = {
+                        "slow": sum(slow_ratios) / len(slow_ratios) if slow_ratios else None,
+                        "fast": sum(fast_ratios) / len(fast_ratios) if fast_ratios else None
+                    }
+    
+    return data
 
-# Generate graphs
-plot_graph(lowcpu_data, "Average Ratio of Blocks in main chain vs Slow (LowCPU Miners)", "lowcpu_miners.png", low_cpu_values[1:])
-plot_graph(highcpu_data, "Average Ratio of Blocks in main chain vs Slow (HighCPU Miners)", "highcpu_miners.png", low_cpu_values[:-1])
+def plot_data(data, output_dir="plots_avg_ratio_vs_slow"):
+    os.makedirs(output_dir, exist_ok=True)
+    unique_pairs = sorted(set((cpu, blk) for cpu, blk, _ in data.keys()))
+    
+    for cpu, blk in unique_pairs:
+        slow_vals = sorted(set(sl for (c, b, sl) in data.keys() if c == cpu and b == blk))
+        slow_ratios = [data[(cpu, blk, sl)]["slow"] for sl in slow_vals if data[(cpu, blk, sl)]["slow"] is not None]
+        fast_ratios = [data[(cpu, blk, sl)]["fast"] for sl in slow_vals if data[(cpu, blk, sl)]["fast"] is not None]
+        
+        plt.figure(figsize=(8, 5))
+        plt.plot(slow_vals, slow_ratios, marker='o', linestyle='-', label='Slow Miners')
+        plt.plot(slow_vals, fast_ratios, marker='s', linestyle='-', label='Fast Miners')
+        
+        plt.xlabel("Slow Miners Ratio")
+        plt.ylabel("Average Ratio of Blocks in Main Chain")
+        plt.title(f"Avg Ratio of Main Chain Blocks vs. Slow Miners Ratio\nlowCpu_miners_ratio={cpu}, blkTime={blk}")
+        plt.legend()
+        plt.grid(True)
+        
+        plot_filename = os.path.join(output_dir, f"plot_cpu_{cpu}_blk_{blk}.png")
+        plt.savefig(plot_filename)
+        plt.close()
+        print(f"Saved plot: {plot_filename}")
+
+parent_directory = "exp_logs2"  # Change this if your logs are stored elsewhere
+data = parse_logs(parent_directory)
+plot_data(data)
