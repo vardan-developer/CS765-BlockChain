@@ -15,13 +15,13 @@ private:
     BlockTree blockTree;
     blockID_t processingBlockID;
     txnID_t processingTxnID;
-    time_t processingTxnTime;
-    time_t processingBlockTime;
     std::map<txnID_t, std::set<minerID_t>> txnToMiner;
     std::map<blockID_t, std::set<minerID_t>> blkToMiner;
     int totalMiners;
     int txnInterval;
     int blkInterval;
+    time_t processingTxnTime;
+    time_t processingBlockTime;
     int totalBlocksGenerated;
     
 public:
