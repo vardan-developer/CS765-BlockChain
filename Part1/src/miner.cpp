@@ -168,7 +168,15 @@ std::vector<Event> Miner::receiveBlock(Event event){
 
     do {
         possibleAddedChild = blockTree.addCachedChild();
-        if ( possibleAddedChild.id >= 0 ) chainSwitched |= blockTree.switchToLongestChain(possibleAddedChild, memPool);
+        if ( possibleAddedChild.id >= 0 ) {
+            chainSwitched |= blockTree.switchToLongestChain(possibleAddedChild, memPool);
+            for (auto peer: neighbors){
+                if(blkToMiner[possibleAddedChild->id].find(peer) == blkToMiner[possibleAddedChild->id].end()){
+                    blkToMiner[possibleAddedChild->id].insert(peer);
+                    newEvents.push_back(Event(EventType::SEND_BROADCAST_BLOCK, possibleAddedChild, event.timestamp, id, peer));
+                }
+            }
+        }
     } while ( possibleAddedChild.id >= 0 );
 
     if ( chainSwitched ) {
