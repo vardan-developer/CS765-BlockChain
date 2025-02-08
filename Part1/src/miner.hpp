@@ -42,6 +42,7 @@ public:
     int getID() const;
     void printMiner();
     void printSummary(bool fast, bool high);
+    float getRatio();
 };
 
 

@@ -73,14 +73,27 @@ Simulator::Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit, 
 
 Simulator::~Simulator(){
     this->generateGraphViz();
+    std::vector<float> fast_high, fast_low, slow_high, slow_low;
+    float tempRatio;
     for ( Miner * miner : miners) {
-        bool fast = false;
-        for ( minerID_t miner_t = 0; miner_t < totalMiners; miner_t++) {
-            fast |= ( networkTopology[miner->getID()][miner_t].second == 100 * Mb );
-        }
-        miner->printSummary(fast, highCPUMiners.count(miner->getID()));
+        bool fast = fastMiners.count(miner->getID());
+        bool high = highCPUMiners.count(miner->getID());
+        tempRatio = miner->getRatio();
+        if (tempRatio == -1) continue;
+        if(fast && high) fast_high.push_back(tempRatio);
+        else if(fast && !high) fast_low.push_back(tempRatio);
+        else if(!fast && high) slow_high.push_back(tempRatio);
+        else slow_low.push_back(tempRatio);
+        miner->printSummary(fast, high);
         delete miner;
     }
+
+    std::cout<<"------------------------\n\n";
+    std::cout<<"Fast/High : " << (std::accumulate(fast_high.begin(), fast_high.end(), 0.0) / fast_high.size()) << '\n';
+    std::cout<<"Fast/Low : " << (std::accumulate(fast_low.begin(), fast_low.end(), 0.0) / fast_low.size()) << '\n';
+    std::cout<<"Slow/High : " << (std::accumulate(slow_high.begin(), slow_high.end(), 0.0) / slow_high.size()) << '\n';
+    std::cout<<"Slow/Low : " << (std::accumulate(slow_low.begin(), slow_low.end(), 0.0) / slow_low.size()) << '\n';
+    std::cout<<"------------------------\n\n";
 }
 
 void Simulator::run(){

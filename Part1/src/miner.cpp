@@ -117,7 +117,6 @@ std::vector<Event> Miner::genBlock(time_t currentTime){
             }
         }
     }
-    this->totalBlocksGenerated++;
     return {Event(EventType::BLOCK_CREATION, block, scheduledBlkTime, id, -1)};
 }
 
@@ -202,12 +201,17 @@ std::vector<minerID_t> Miner::getNeighbors() {
 
 bool Miner::confirmBlock(Event event) {
     if(event.block->id == processingBlockID) {
+        this->totalBlocksGenerated++;
         blockTree.addBlock(*(event.block), event.timestamp);
         blockTree.switchToLongestChain(*(event.block), memPool);
         processingBlockID = -1;
         return true;
     }
     return false;
+}
+
+float Miner::getRatio() {
+    return blockTree.getRatio(this->totalBlocksGenerated);
 }
 
 void Miner::printMiner(){
