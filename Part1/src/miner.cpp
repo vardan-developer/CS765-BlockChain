@@ -77,7 +77,6 @@ std::vector<Event> Miner::genTransaction(time_t currentTime){
 
 std::vector<Event> Miner::genBlock(time_t currentTime){
     if (processingBlockID > 0) {
-        // std::cout << "Miner: " << id << " Rejects Block Creation, Currently Processing Block ID: " << processingBlockID << std::endl;
         return std::vector<Event>();
     }
     double expDelay = getExponentialRandom(blkInterval);
@@ -119,7 +118,6 @@ std::vector<Event> Miner::genBlock(time_t currentTime){
         }
     }
     this->totalBlocksGenerated++;
-    // std::cout << "Miner: " << id << " Creates Block ID: " << blockID << ", Height: " << height << ", Parent ID: " << parentID << ", Timestamp: " << scheduledBlkTime << std::endl;
     return {Event(EventType::BLOCK_CREATION, block, scheduledBlkTime, id, -1)};
 }
 
@@ -147,19 +145,14 @@ std::vector<Event> Miner::receiveTransactions(Event event){
 }
 
 std::vector<Event> Miner::receiveBlock(Event event){
-
-    // printMiner();
-
     if ( ! this->blkToMiner[event.block->id].empty() ) {
         return std::vector<Event> ();
     }
 
     if(blockTree.addBlock(*(event.block), event.timestamp) < 0){
-        // std::cout << "Block: " << event.block->id << ", Height: " << event.block->height << ", Parent ID: " << event.block->parentID << ", Timestamp: " << event.timestamp << std::endl;
         return std::vector<Event>();
     }
-    // std::cout << "Block: " << event.block->id << ", Height: " << event.block->height << ", Parent ID: " << event.block->parentID << ", Timestamp: " << event.timestamp << std::endl;
-
+    
     std::vector<Event> newEvents;
 
     bool chainSwitched = blockTree.switchToLongestChain(*(event.block), memPool);
@@ -170,10 +163,11 @@ std::vector<Event> Miner::receiveBlock(Event event){
         possibleAddedChild = blockTree.addCachedChild();
         if ( possibleAddedChild.id >= 0 ) {
             chainSwitched |= blockTree.switchToLongestChain(possibleAddedChild, memPool);
+            std::vector<minerID_t> neighbors = getNeighbors();
             for (auto peer: neighbors){
-                if(blkToMiner[possibleAddedChild->id].find(peer) == blkToMiner[possibleAddedChild->id].end()){
-                    blkToMiner[possibleAddedChild->id].insert(peer);
-                    newEvents.push_back(Event(EventType::SEND_BROADCAST_BLOCK, possibleAddedChild, event.timestamp, id, peer));
+                if(blkToMiner[possibleAddedChild.id].find(peer) == blkToMiner[possibleAddedChild.id].end()){
+                    blkToMiner[possibleAddedChild.id].insert(peer);
+                    newEvents.push_back(Event(EventType::SEND_BROADCAST_BLOCK, &possibleAddedChild, event.timestamp, id, peer));
                 }
             }
         }
@@ -184,12 +178,6 @@ std::vector<Event> Miner::receiveBlock(Event event){
         std::vector<Event> genBlocks = this->genBlock(event.timestamp);
         newEvents.insert(newEvents.end(), genBlocks.begin(), genBlocks.end());
     }
-
-    // else if ( blockTree.getCurrent().id == event.block->id ) {
-    //     processingBlockID = -1;
-    //     std::vector<Event> genBlocks = this->genBlock(event.timestamp);
-    //     newEvents.insert(newEvents.end(), genBlocks.begin(), genBlocks.end());
-    // }
 
     blkToMiner[event.block->id].insert(event.owner);
     std::vector<minerID_t> neighbors = getNeighbors();
@@ -213,7 +201,6 @@ std::vector<minerID_t> Miner::getNeighbors() {
 }
 
 bool Miner::confirmBlock(Event event) {
-    // std::cout << "Confirming Block: " << event.block->id << std::endl;
     if(event.block->id == processingBlockID) {
         blockTree.addBlock(*(event.block), event.timestamp);
         blockTree.switchToLongestChain(*(event.block), memPool);

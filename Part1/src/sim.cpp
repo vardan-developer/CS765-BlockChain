@@ -23,7 +23,7 @@ void Simulator::generateGraphViz(const std::string& filename) {
     file << "    label=\"Legend\";\n";
     file << "    style=filled;\n";
     file << "    color=lightgrey;\n";
-    file << "    node [shape=circle, style=filled, width=0.3, height=0.3];\n";
+    file << "    node [shape=circle, style=filled, width=0.05, height=0.05, fontsize=8, margin=0.0];\n";
     file << "    l1 [label=\"Fast/High\", fillcolor=\"green\"];\n";
     file << "    l2 [label=\"Fast/Low\", fillcolor=\"red\"];\n";
     file << "    l3 [label=\"Slow/High\", fillcolor=\"lightblue\"];\n";
@@ -41,7 +41,7 @@ void Simulator::generateGraphViz(const std::string& filename) {
     for (int i = 0; i < numMiners; i++) {
         for (int j = i + 1; j < numMiners; j++) { 
             if (networkTopology[i][j].first >= 0) {
-                std::string edgeLabel = (slowMiners.count(i) && slowMiners.count(j)) ? "Slow" : "Fast";
+                file << "  " << i << " -- " << j << " [color=blue];\n";
             }
         }
     }
@@ -91,7 +91,6 @@ void Simulator::run(){
         events.pop();
         processEvent(event);
         if ( this->currentTime > this->timeLimit) break;
-        // std::cout << this->currentTime << std::endl;
         
     } while( this->blkCount );
 }

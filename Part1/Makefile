@@ -4,6 +4,13 @@
 CXX = g++
 CXXFLAGS = -std=c++23 -Wall
 DEBUG = 1
+TOTAL_NODES = 10
+SLOW = 0.5
+LOW_CPU = 0.5
+TTX_TIME = 10000
+BLK_TIME = 6000
+BLK_LIMIT = 10000
+TIME_LIMIT = 100000
 # If DEBUG=1 is passed in the command line, add the -g flag for debugging
 ifeq ($(DEBUG),1)
     CXXFLAGS += -g
@@ -25,20 +32,20 @@ OBJS = $(SRCS:.cpp=.o)
 # Target executable
 TARGET = sim
 
+# Default target: build the executable
+all: $(TARGET)
+
 run: all
-	rm -r logs graphs
+	rm -rf logs graphs
 	mkdir -p logs
 	mkdir -p graphs
-	./sim  --total-nodes 10 --slow 0.5 --low-cpu 0.5 --ttx-time 10000 --blk-time 6000 --blk-limit 300 > miners.txt
+	./sim  --total-nodes $(TOTAL_NODES) --slow $(SLOW) --low-cpu $(LOW_CPU) --ttx-time $(TTX_TIME) --blk-time $(BLK_TIME) --blk-limit $(BLK_LIMIT) --time-limit $(TIME_LIMIT) > miners.txt
 	dot -Tpng peerGraph.dot -o graphs/peerGraph.png
 	rm peerGraph.dot
 	for file in blockTree-*.dot; do \
 		dot -Tpng $$file -o graphs/$${file%.dot}.png; \
 		rm $$file; \
 	done
-
-# Default target: build the executable
-all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJS)
