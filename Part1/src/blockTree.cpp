@@ -349,7 +349,7 @@ void BlockTree::exportToDot(const std::string & filename) const {
     file << "}\n";
     file.close();
 
-    std::cout << "DOT file saved: " << filename << '\n';
+    // std::cout << "DOT file saved: " << filename << '\n';
 }
 
 void BlockTree::printBlock(BlockTreeNode* node, time_t arrivalTime) {
@@ -384,4 +384,52 @@ Block BlockTree::addCachedChild() {
     Block newBlock = Block();
     newBlock.id = -1;
     return newBlock;
+}
+
+std::unordered_set<BlockTreeNode*> BlockTree::findMainChain() {
+    std::unordered_set<BlockTreeNode*> mainChain;
+    BlockTreeNode* p = this->current;
+    while (p) {
+        mainChain.insert(p);
+        p = p->parent;
+    }
+    return mainChain;
+}
+
+void BlockTree::findLeaves(BlockTreeNode* node, std::unordered_set<BlockTreeNode*>& mainChain, std::vector<BlockTreeNode*>& leaves) {
+    if (!node) return;
+
+    if (node->children.empty() && mainChain.find(node) == mainChain.end()) {
+        leaves.push_back(node);
+    }
+
+    for (BlockTreeNode* child : node->children) {
+        findLeaves(child, mainChain, leaves);
+    }
+}
+
+int BlockTree::findDistanceToMainChain(BlockTreeNode* leaf, std::unordered_set<BlockTreeNode*>& mainChain) {
+    int distance = 0;
+    BlockTreeNode* p = leaf;
+    while (mainChain.find(p) == mainChain.end()) {
+        distance++;
+        p = p->parent;
+    }
+    return distance;
+}
+
+float BlockTree::averageBranchLength() {
+    std::unordered_set<BlockTreeNode*> mainChain = findMainChain();
+
+    std::vector<BlockTreeNode*> leaves;
+    findLeaves(genesis, mainChain, leaves);
+
+    if (leaves.empty()) return 0.0;
+
+    int totalDistance = 0;
+    for (BlockTreeNode* leaf : leaves) {
+        totalDistance += findDistanceToMainChain(leaf, mainChain);
+    }
+
+    return (float)totalDistance / leaves.size();
 }

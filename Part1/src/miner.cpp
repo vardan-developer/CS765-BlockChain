@@ -232,3 +232,7 @@ Miner::~Miner(){
 void Miner::printSummary(bool fast, bool high) {
     this->blockTree.printSummary(fast, high, this->totalBlocksGenerated);
 }
+
+float Miner::getAvgBranchLength() {
+    return blockTree.averageBranchLength();
+}

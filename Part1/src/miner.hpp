@@ -43,6 +43,7 @@ public:
     void printMiner();
     void printSummary(bool fast, bool high);
     float getRatio();
+    float getAvgBranchLength();
 };
 
 

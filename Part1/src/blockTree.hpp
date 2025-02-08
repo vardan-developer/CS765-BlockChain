@@ -42,6 +42,9 @@ class BlockTree {
 
         void printSubTree(BlockTreeNode* node, std::ofstream & file) const;
         void printBlock(BlockTreeNode* node, time_t arrivalTime) ;
+        std::unordered_set<BlockTreeNode*> findMainChain();
+        void findLeaves(BlockTreeNode* node, std::unordered_set<BlockTreeNode*>& mainChain, std::vector<BlockTreeNode*>& leaves);
+        int findDistanceToMainChain(BlockTreeNode* leaf, std::unordered_set<BlockTreeNode*>& mainChain);
         std::ofstream file;   
         std::set<std::pair<Block, time_t>> cachedChildren;
 
@@ -66,6 +69,7 @@ class BlockTree {
         void printSummary(bool fast, bool highCpu, long long totalBlocksGenerated);
         Block addCachedChild();
         float getRatio(long long totalBlocksGenerated);
+        float averageBranchLength();
 };
 
 
