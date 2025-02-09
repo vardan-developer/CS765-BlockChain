@@ -79,12 +79,11 @@ Simulator::~Simulator(){
         bool fast = fastMiners.count(miner->getID());
         bool high = highCPUMiners.count(miner->getID());
         tempRatio = miner->getRatio();
-        if (tempRatio == -1) continue;
+        miner->printSummary(fast, high);
         if(fast && high) fast_high.push_back(tempRatio);
         else if(fast && !high) fast_low.push_back(tempRatio);
         else if(!fast && high) slow_high.push_back(tempRatio);
         else slow_low.push_back(tempRatio);
-        miner->printSummary(fast, high);
         delete miner;
     }
 
