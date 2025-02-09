@@ -8,9 +8,9 @@ WARNINGS = 0
 TOTAL_NODES = 50
 SLOW = 0.6
 LOW_CPU = 0.4
-TTX_TIME = 10000
-BLK_TIME = 600000
-BLK_LIMIT = 100
+TTX_TIME = 1000
+BLK_TIME = 60000
+BLK_LIMIT = 30
 TIME_LIMIT = 10000000
 # If DEBUG=1 is passed in the command line, add the -g flag for debugging
 ifeq ($(DEBUG),1)
@@ -48,7 +48,7 @@ run: all
 	dot -Tpng peerGraph.dot -o graphs/peerGraph.png 1> /dev/null 2> /dev/null
 	rm peerGraph.dot
 	for file in blockTree-*.dot; do \
-		# dot -Tpng $$file -o graphs/$${file%.dot}.png 1> /dev/null  2>/dev/null; \
+		dot -Tpng $$file -o graphs/$${file%.dot}.png 1> /dev/null  2>/dev/null; \
 		rm $$file; \
 	done
 
@@ -70,5 +70,5 @@ g: clean $(TARGET)
 
 # Clean up build files
 clean:
-	rm -f $(TARGET) $(OBJS) *.logs miners.txt
+	rm -f $(TARGET) $(OBJS) *.logs miners.txt *.dot
 	rm -rf logs/ graphs/
