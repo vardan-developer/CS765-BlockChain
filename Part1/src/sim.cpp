@@ -50,7 +50,6 @@ void Simulator::generateGraphViz(const std::string& filename) {
 
     file << "}\n";
     file.close();
-    std::cout << "Graph saved to " << filename << std::endl;
 }
 
 // Constructor: Initializes the simulator with network parameters

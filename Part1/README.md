@@ -52,6 +52,13 @@ make clean
 ```
 
 ## Simulation Parameters
+Manually run the execultable `sim` made after running `make`.:
+
+```sh
+./sim  --total-nodes <TOTAL_NODES> --z0 <SLOW> --z1 <LOW_CPU> --ttx-time <TTX_TIME> --blk-time <BLK_TIME> --blk-limit <BLK_LIMIT>
+```
+
+OR
 
 You can customize the simulation parameters by modifying the `Makefile` variables:
 
@@ -60,8 +67,10 @@ You can customize the simulation parameters by modifying the `Makefile` variable
 - `LOW_CPU`: Fraction of nodes with low computational power (default: `0.4`).
 - `TTX_TIME`: Transaction arrival time in ms (default: `10000`).
 - `BLK_TIME`: Block mining interval in ms (default: `60000`).
-- `BLK_LIMIT`: Max transactions per block (default: `10`).
+- `BLK_LIMIT`: Max blocks which get into the blockchain tree (default: `10`).
 - `TIME_LIMIT`: Total simulation runtime in ms (default: `10000000`).
+
+At least one of `BLK_LIMIT` or `TIME_LIMIT` should be given when executable is run manually.
 
 OR
 
@@ -83,7 +92,7 @@ This command will:
 
 - The main simulation output is stored in `miners.txt`.
 - The log for every miner is generated in the `logs/` directory with file name `miner-<miner_ID>.logs`
-- Blockchain trees' visualizations are generated in the `graphs/` directory.
+- Blockchain trees' visualizations along with the peer graph are generated in the `graphs/` directory.
 
 
 ## Contributors
