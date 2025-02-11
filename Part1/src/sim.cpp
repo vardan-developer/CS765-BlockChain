@@ -74,7 +74,6 @@ Simulator::Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit, 
         Miner * new_miner = new Miner(i, n, txnInterval, blkInterval*(totalHashingPower/(highCPUMiners.count(i) > 0 ? 10 : 1)), genesisBlock);
         miners.push_back(new_miner);
     }
-    std::cout << n << " Miners initialized\n";
     this->timeLimit = timeLimit;
     this->blkCount = blkCount;
 }
@@ -90,6 +89,7 @@ Simulator::~Simulator() {
         bool high = highCPUMiners.count(miner->getID());
         tempRatio = miner->getRatio();
         miner->printSummary(fast, high);
+        if(tempRatio == -1) {delete miner; continue;}
         if(fast && high) fast_high.push_back(tempRatio);
         else if(fast && !high) fast_low.push_back(tempRatio);
         else if(!fast && high) slow_high.push_back(tempRatio);
@@ -185,7 +185,6 @@ void Simulator::processEvent(Event event) {
             if ( miners[event.owner]->confirmBlock(event) ) {
                 addEvent(Event(EventType::BROADCAST_BLOCK, event.block, currentTime, event.owner, 0));
                 this->blkCount--;
-                std::cout << "Block " << event.block->id << " Confirmed by Miner" << event.block->owner << '\n';
             }
             break;
         }
