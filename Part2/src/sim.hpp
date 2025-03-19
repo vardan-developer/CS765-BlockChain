@@ -1,6 +1,8 @@
 #ifndef SIM_HPP
 #define SIM_HPP
 
+#include "block.hpp"
+#include "event.hpp"
 #include "miner.hpp"
 #include <ctime>
 
@@ -8,7 +10,7 @@
 class Simulator{
 private:
     std::vector<Miner *> miners;
-    std::priority_queue<Event, std::vector<Event>, std::greater<Event>> events;
+    std::priority_queue<Event*, std::vector<Event*>, std::greater<Event*>> events;
     time_t currentTime;
     int totalMiners;
     int txnInterval;
@@ -23,10 +25,19 @@ public:
     ~Simulator();
     void run();
     void getEvents();
-    void addEvent(Event event);
-    void addEvents(std::vector<Event> events);
-    void processEvent(Event event);
+    void addEvent(Event * event);
+    void addEvents(std::vector<Event*> events);
+    void processEvent(Event * event);
 
+    void processSendHashEvent(HashEvent * event);
+    void processReceiveHashEvent(HashEvent * event);
+    void processSendBlockEvent(BlockEvent * event);
+    void processReceiveBlockEvent(BlockEvent * event);
+    void processSendTransactionEvent(TransactionEvent * event);
+    void processReceiveTransactionEvent(TransactionEvent * event);
+    void processSendGetEvent(GetEvent * event);
+    void processReceiveGetEvent(GetEvent * event);
+    void processBroadcastPrivateChain(BroadcastPrivateChainEvent* event);
 };
 
 #endif
