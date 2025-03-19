@@ -5,6 +5,17 @@
 #include "block.hpp"
 #include "transaction.hpp"
 
+/**
+ * @brief Enum class representing different types of events in the system
+ * 
+ * RECEIVE_BROADCAST_TRANSACTION: Event when a broadcast transaction is received
+ * RECEIVE_BROADCAST_BLOCK: Event when a broadcast block is received
+ * BLOCK_CREATION: Event for creating a new block
+ * BROADCAST_BLOCK: Event for broadcasting a block
+ * BROADCAST_TRANSACTION: Event for broadcasting a transaction
+ * SEND_BROADCAST_BLOCK: Event for sending a broadcast block
+ * SEND_BROADCAST_TRANSACTION: Event for sending a broadcast transaction
+ */
 enum class EventType {
     RECEIVE_BROADCAST_TRANSACTION,
     RECEIVE_BROADCAST_BLOCK,
@@ -15,34 +26,45 @@ enum class EventType {
     SEND_BROADCAST_TRANSACTION
 };
 
+/**
+ * @brief Class representing events in the blockchain system
+ * Contains either a Block or Transaction, but never both simultaneously
+ */
 struct Event {
-    EventType type;
-    Block * block;
-    Transaction * transaction;
-    time_t timestamp;       // Time when this event will be processed
-    minerID_t owner;
-    minerID_t receiver;
+    EventType type;          // Type of event (from EventType enum)
+    Block * block;          // Pointer to block (if block-related event)
+    Transaction * transaction; // Pointer to transaction (if transaction-related event)
+    time_t timestamp;       // Scheduled processing time for this event
+    minerID_t owner;        // ID of the miner who created this event
+    minerID_t receiver;     // ID of the intended receiving miner
 
-    Event(EventType type, const Block*  block, time_t timestamp, minerID_t owner, minerID_t receiver):
-        type(type),
-        transaction(nullptr),
-        timestamp(timestamp),
-        owner(owner),
-        receiver(receiver)
+    // Constructor for block-related events
+    // Creates a deep copy of the provided block
+    Event(EventType type, const Block* block, time_t timestamp, minerID_t owner, minerID_t receiver)
+        : type(type),
+          block(nullptr),
+          transaction(nullptr),
+          timestamp(timestamp),
+          owner(owner),
+          receiver(receiver)
     {
         this->block = new Block(*block);
     }
 
-    Event(EventType type, const Transaction*  transaction, time_t timestamp, minerID_t owner, minerID_t receiver):
-        type(type),
-        block(nullptr),
-        timestamp(timestamp),
-        owner(owner),
-        receiver(receiver)
+    // Constructor for transaction-related events
+    // Creates a deep copy of the provided transaction
+    Event(EventType type, const Transaction* transaction, time_t timestamp, minerID_t owner, minerID_t receiver)
+        : type(type),
+          block(nullptr),
+          timestamp(timestamp),
+          owner(owner),
+          receiver(receiver)
     {
         this->transaction = new Transaction(*transaction);
     }
 
+    // Copy constructor
+    // Performs deep copy of either block or transaction
     Event(const Event & other) {
         type = other.type;
         timestamp = other.timestamp;
@@ -57,6 +79,8 @@ struct Event {
         }
     };
 
+    // Copy assignment operator
+    // Performs deep copy of either block or transaction
     Event & operator = (const Event & other) {
         if (this == &other) {
             return *this;
@@ -75,6 +99,8 @@ struct Event {
         return *this;
     }
 
+    // Move constructor
+    // Transfers ownership of block or transaction
     Event(Event && other) {
         type = other.type;
         timestamp = other.timestamp;
@@ -91,6 +117,8 @@ struct Event {
         }
     }
 
+    // Move assignment operator
+    // Transfers ownership of block or transaction
     Event & operator = (Event && other) {
         if (this==&other) {
             return *this;
@@ -111,6 +139,8 @@ struct Event {
         return *this;
     }
 
+    // Comparison operators for event ordering based on timestamp
+    // Used for priority queue implementation
     bool operator < (const Event& other) const {
         return timestamp < other.timestamp;
     }
@@ -127,8 +157,9 @@ struct Event {
         return timestamp > other.timestamp;
     }
 
+    // Destructor
+    // Properly cleans up dynamically allocated block or transaction
     ~Event() {
-        // block ? delete block : delete transaction;
         if ( block ) {
             delete block;
         }
@@ -136,7 +167,6 @@ struct Event {
             delete transaction;
         }
     }
-    
 };
 
 #endif

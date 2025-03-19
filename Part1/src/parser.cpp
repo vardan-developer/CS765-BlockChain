@@ -20,28 +20,28 @@ bool parseArgs(int argc, char* argv[], ProgramSettings &settings, std::string &e
                 errorMsg = "Error: Invalid integer for --total-nodes";
                 return false;
             }
-        } else if (arg == "--slow") {
+        } else if (arg == "--z0") {
             if (i + 1 >= argc) {
-                errorMsg = "Error: Missing value for --slow";
+                errorMsg = "Error: Missing value for --z0";
                 return false;
             }
             try {
                 settings.z0 = std::stof(argv[++i]);
                 z0_set = true;
             } catch (const std::exception &e) {
-                errorMsg = "Error: Invalid float for --slow (z0)";
+                errorMsg = "Error: Invalid float for --z0";
                 return false;
             }
-        } else if (arg == "--low-cpu") {
+        } else if (arg == "--z1") {
             if (i + 1 >= argc) {
-                errorMsg = "Error: Missing value for --low-cpu";
+                errorMsg = "Error: Missing value for --z1";
                 return false;
             }
             try {
                 settings.z1 = std::stof(argv[++i]);
                 z1_set = true;
             } catch (const std::exception &e) {
-                errorMsg = "Error: Invalid float for --low-cpu (z1)";
+                errorMsg = "Error: Invalid float for --z1";
                 return false;
             }
         } else if (arg == "--ttx-time") {

@@ -1,12 +1,13 @@
 #include "utils.hpp"
 
+// Random number generation setup
 std::random_device rd;
 std::mt19937 gen(rd()); 
-// std::mt19937 gen(25); 
-std::set<minerID_t> fastMiners;
-std::set<minerID_t> slowMiners;
+// std::mt19937 gen(25); // Commented out fixed seed
+std::set<minerID_t> fastMiners;  // Set to track miners with fast network connections
+std::set<minerID_t> slowMiners;  // Set to track miners with slow network connections
 
-// Add these definitions before the Counter methods
+// Static counter initialization for block and transaction IDs
 blockID_t Counter::blockIDCount = 1;
 txnID_t Counter::txnIDCount = 1;
 
@@ -19,6 +20,7 @@ txnID_t Counter::getTxnID(){
 }
 
 
+// Returns a random permutation of integers from 0 to n-1
 std::vector<int> getRandomPermutation(int n) {
     std::vector<int> perm(n);
     // Initialize with 0 to n-1
@@ -28,6 +30,7 @@ std::vector<int> getRandomPermutation(int n) {
     return perm;
 }
 
+// Generates a random number following exponential distribution with given mean
 double getExponentialRandom(double mean) {
     if (mean <= 0) {
         throw std::invalid_argument("Mean must be greater than zero.");
@@ -39,6 +42,7 @@ double getExponentialRandom(double mean) {
     return distribution(gen);
 }
 
+// Generates a random number uniformly distributed between a and b
 double getUniformRandom(double a, double b) {
     if (a > b) {
         throw std::invalid_argument("Lower bound must be less than upper bound.");
@@ -53,6 +57,7 @@ double getUniformRandom(double a, double b) {
     return distribution(gen);
 }
 
+// Checks if a graph represented by adjacency lists is connected using BFS
 bool is_connected(const std::vector<std::unordered_set<int> >  &adj)
 {
     int n = adj.size();
@@ -80,6 +85,8 @@ bool is_connected(const std::vector<std::unordered_set<int> >  &adj)
     return count == n;
 }
 
+// Generates a connected graph with n nodes, where each node has degree between 3 and 6
+// Uses configuration model with degree sequence modification
 std::vector<std::vector<minerID_t> > generate_graph(int n) {
     std::vector<std::vector<minerID_t> > adj(n);
 
@@ -202,6 +209,9 @@ std::vector<std::vector<minerID_t> > generate_graph(int n) {
     return adj;
 }
 
+// Generates network topology with latency and bandwidth parameters
+// z0 represents the fraction of slow miners in the network
+// Returns a matrix of pairs (latency, bandwidth) for each connection
 std::vector<std::vector<std::pair<int, int> > > generateNetworkTopology(int n, float z0){
     std::vector<std::vector<minerID_t> > adj = generate_graph(n);
     std::vector<std::vector<minerID_t> > adj_matrix(n, std::vector<minerID_t>(n, -1));
@@ -246,6 +256,9 @@ std::vector<std::vector<std::pair<int, int> > > generateNetworkTopology(int n, f
     return networkTopology;
 }
 
+// Returns a set of high CPU miners
+// z1 represents the fraction of low CPU miners
+// (1-z1) represents the fraction of high CPU miners
 std::set<minerID_t> getHighCPUMiners(int n, float z1){
     std::set<minerID_t> highCPUMiners;
     std::vector<int> perm = getRandomPermutation(n);
