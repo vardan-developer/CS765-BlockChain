@@ -8,6 +8,8 @@ extern std::set<minerID_t> highCPUMiners;
 extern std::set<minerID_t> fastMiners;
 extern std::set<minerID_t> slowMiners;
 
+// Generates a GraphViz visualization of the network topology
+// Creates a graph showing miners and their connections, with colors indicating miner types
 void Simulator::generateGraphViz(const std::string& filename) {
     std::ofstream file(filename);
     if (!file.is_open()) {
@@ -48,10 +50,15 @@ void Simulator::generateGraphViz(const std::string& filename) {
 
     file << "}\n";
     file.close();
-    std::cout << "Graph saved to " << filename << std::endl;
 }
 
-Simulator::Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit, long long blkCount){ // received in ms
+// Constructor: Initializes the simulator with network parameters
+// n: number of miners
+// txnInterval: time between transactions
+// blkInterval: base block interval
+// timeLimit: simulation time limit
+// blkCount: number of blocks to simulate
+Simulator::Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit, long long blkCount) {
     totalMiners = n;
     txnInterval = txnInterval;
     blkInterval = blkInterval; // this is I for each miner it will be I/(fraction of hashing power)
@@ -66,12 +73,13 @@ Simulator::Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit, 
         Miner * new_miner = new Miner(i, n, txnInterval, blkInterval*(totalHashingPower/(highCPUMiners.count(i) > 0 ? 10 : 1)), genesisBlock);
         miners.push_back(new_miner);
     }
-    std::cout << n << " Miners initialized\n";
     this->timeLimit = timeLimit;
     this->blkCount = blkCount;
 }
 
-Simulator::~Simulator(){
+// Destructor: Cleans up resources and prints final statistics
+// Calculates and displays average mining ratios for different miner categories
+Simulator::~Simulator() {
     this->generateGraphViz();
     std::vector<float> fast_high, fast_low, slow_high, slow_low;
     float tempRatio;
@@ -80,6 +88,7 @@ Simulator::~Simulator(){
         bool high = highCPUMiners.count(miner->getID());
         tempRatio = miner->getRatio();
         miner->printSummary(fast, high);
+        if(tempRatio == -1) {delete miner; continue;}
         if(fast && high) fast_high.push_back(tempRatio);
         else if(fast && !high) fast_low.push_back(tempRatio);
         else if(!fast && high) slow_high.push_back(tempRatio);
@@ -95,7 +104,9 @@ Simulator::~Simulator(){
     std::cout<<"------------------------\n\n";
 }
 
-void Simulator::run(){
+// Main simulation loop
+// Processes events until either time limit is reached or required blocks are mined
+void Simulator::run() {
     do {
         getEvents();
         if (events.empty()) continue;
@@ -107,7 +118,8 @@ void Simulator::run(){
     } while( this->blkCount );
 }
 
-void Simulator::getEvents(){
+// Collects pending events from all miners and adds them to the event queue
+void Simulator::getEvents() {
     for(int i = 0; i < totalMiners; i++){
         std::vector<Event> minerEvents = miners[i]->getEvents(currentTime);
         while (minerEvents.size() > 0) {
@@ -117,17 +129,20 @@ void Simulator::getEvents(){
     }
 }
 
-void Simulator::addEvent(Event event){
+// Adds a single event to the simulation event queue
+void Simulator::addEvent(Event event) {
     events.push(event);
 }
 
-void Simulator::addEvents(std::vector<Event> events){
+// Adds multiple events to the simulation event queue
+void Simulator::addEvents(std::vector<Event> events) {
     for(auto event : events){
         this->events.push(event);
     }
 }
 
-std::string eventTypeToString(EventType type){
+// Utility function to convert EventType enum to string for debugging
+std::string eventTypeToString(EventType type) {
     switch(type){
         case EventType::SEND_BROADCAST_TRANSACTION: return "SEND_BROADCAST_TRANSACTION";
         case EventType::SEND_BROADCAST_BLOCK: return "SEND_BROADCAST_BLOCK";
@@ -140,7 +155,13 @@ std::string eventTypeToString(EventType type){
     }
 }
 
-void Simulator::processEvent(Event event){
+// Core event processing function
+// Handles different types of events and their propagation through the network:
+// - Transaction broadcasting
+// - Block broadcasting
+// - Block creation
+// - Network message propagation
+void Simulator::processEvent(Event event) {
     currentTime = event.timestamp;
     switch(event.type){
         case EventType::SEND_BROADCAST_TRANSACTION: {
@@ -163,7 +184,6 @@ void Simulator::processEvent(Event event){
             if ( miners[event.owner]->confirmBlock(event) ) {
                 addEvent(Event(EventType::BROADCAST_BLOCK, event.block, currentTime, event.owner, 0));
                 this->blkCount--;
-                std::cout << "Block " << event.block->id << " Confirmed by Miner" << event.block->owner << '\n';
             }
             break;
         }
@@ -188,7 +208,8 @@ void Simulator::processEvent(Event event){
     }
 }
 
-Block Simulator::createGenesisBlock(){
+// Creates the initial (genesis) block for the blockchain
+Block Simulator::createGenesisBlock() {
     Block genesisBlock(0, 0, 0, 0, -1);
     return genesisBlock;
 }
