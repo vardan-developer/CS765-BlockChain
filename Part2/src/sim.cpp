@@ -128,7 +128,7 @@ Simulator::Simulator(ProgramSettings & settings):
     currentTime(0)
 {
     honestNetwork = new Network(totalMiners, maliciousFraction, false);
-    honestNetwork = new Network(totalMiners, maliciousFraction, true);
+    maliciousNetwork = new Network(totalMiners, maliciousFraction, true);
     Block genesisBlock = createGenesisBlock();
     miners.reserve(totalMiners);
     for(int i = 0; i < totalMiners * maliciousFraction; i++) {
@@ -293,19 +293,19 @@ void Simulator::processSendGetEvent(GetEvent * event) {
 }
 
 inline void Simulator::processReceiveHashEvent(HashEvent * event) {
-    this->addEvents(this->miners[event->receiver]->receiveHash(event));
+    this->addEvents(this->miners[event->receiver]->receiveHash(* event));
 }
 
 inline void Simulator::processReceiveBlockEvent(BlockEvent * event) {
-    this->addEvents(this->miners[event->receiver]->receiveBlock(event));
+    this->addEvents(this->miners[event->receiver]->receiveBlock(* event));
 }
 
 inline void Simulator::processReceiveTransactionEvent(TransactionEvent * event) {
-    this->addEvents(this->miners[event->receiver]->receiveTransactions(event));
+    this->addEvents(this->miners[event->receiver]->receiveTransactions(* event));
 }
 
 inline void Simulator::processReceiveGetEvent(GetEvent * event) {
-    this->addEvents(this->miners[event->receiver]->receiveGet(event));
+    this->addEvents(this->miners[event->receiver]->receiveGet(* event));
 }
 
 void Simulator::processBroadcastPrivateChain(BroadcastPrivateChainEvent* event) {
