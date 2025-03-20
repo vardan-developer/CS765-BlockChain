@@ -4,7 +4,8 @@
 #include "def.hpp"
 
 bool parseArgs(int argc, char* argv[], ProgramSettings &settings, std::string &errorMsg) {
-    bool totalNodes_set = false, z0_set = false, z1_set = false, Ttx_set = false, I_set = false, blkLimit_set = false, timeLimit_set = false;
+    bool totalNodes_set = false, Ttx_set = false, I_set = false, blkLimit_set = false, timeLimit_set = false;
+    bool Tt_set = false, eclipse_set = false, malicious_set = false;
     
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -20,30 +21,7 @@ bool parseArgs(int argc, char* argv[], ProgramSettings &settings, std::string &e
                 errorMsg = "Error: Invalid integer for --total-nodes";
                 return false;
             }
-        } else if (arg == "--z0") {
-            if (i + 1 >= argc) {
-                errorMsg = "Error: Missing value for --z0";
-                return false;
-            }
-            try {
-                settings.z0 = std::stof(argv[++i]);
-                z0_set = true;
-            } catch (const std::exception &e) {
-                errorMsg = "Error: Invalid float for --z0";
-                return false;
-            }
-        } else if (arg == "--z1") {
-            if (i + 1 >= argc) {
-                errorMsg = "Error: Missing value for --z1";
-                return false;
-            }
-            try {
-                settings.z1 = std::stof(argv[++i]);
-                z1_set = true;
-            } catch (const std::exception &e) {
-                errorMsg = "Error: Invalid float for --z1";
-                return false;
-            }
+        // Removed z0 and z1 parameter handling
         } else if (arg == "--ttx-time") {
             if (i + 1 >= argc) {
                 errorMsg = "Error: Missing value for --ttx-time";
@@ -92,6 +70,50 @@ bool parseArgs(int argc, char* argv[], ProgramSettings &settings, std::string &e
                 errorMsg = "Error: Invalid integer for --time-limit";
                 return false;
             }
+        } else if (arg == "--timeout") {
+            if (i + 1 >= argc) {
+                errorMsg = "Error: Missing value for --timeout";
+                return false;
+            }
+            try {
+                settings.Tt = std::stod(argv[++i]);
+                Tt_set = true;
+            } catch (const std::exception &e) {
+                errorMsg = "Error: Invalid double for --timeout";
+                return false;
+            }
+        } else if (arg == "--eclipse") {
+            if (i + 1 >= argc) {
+                errorMsg = "Error: Missing value for --eclipse";
+                return false;
+            }
+            std::string value = argv[++i];
+            if (value == "true" || value == "1") {
+                settings.eclipse = true;
+                eclipse_set = true;
+            } else if (value == "false" || value == "0") {
+                settings.eclipse = false;
+                eclipse_set = true;
+            } else {
+                errorMsg = "Error: Invalid boolean for --eclipse (use 'true'/'false' or '1'/'0')";
+                return false;
+            }
+        } else if (arg == "--malicious") {
+            if (i + 1 >= argc) {
+                errorMsg = "Error: Missing value for --malicious";
+                return false;
+            }
+            try {
+                settings.malicious = std::stod(argv[++i]);
+                malicious_set = true;
+                if (settings.malicious < 0.0 || settings.malicious > 1.0) {
+                    errorMsg = "Error: --malicious must be a float between 0 and 1.";
+                    return false;
+                }
+            } catch (const std::exception &e) {
+                errorMsg = "Error: Invalid double for --malicious";
+                return false;
+            }
         } else {
             errorMsg = "Error: Unknown parameter: " + arg;
             return false;
@@ -99,23 +121,15 @@ bool parseArgs(int argc, char* argv[], ProgramSettings &settings, std::string &e
     }
     
     // Check that all required parameters were provided.
-    if (!totalNodes_set || !z0_set || !z1_set || !Ttx_set || !I_set || ( !blkLimit_set && !timeLimit_set) ) {
+    if (!totalNodes_set || !Ttx_set || !I_set || !Tt_set || !malicious_set || (!blkLimit_set && !timeLimit_set)) {
         errorMsg = "Error: One or more required parameters are missing.";
         return false;
     }
 
-    if ( ! timeLimit_set ) settings.timeLimit = LONG_LONG_MAX_VAL;
-    if ( ! blkLimit_set ) settings.blkLimit = LONG_LONG_MAX_VAL;
-    
-    // Validate that z0 and z1 are between 0 and 1.
-    if (settings.z0 < 0.0f || settings.z0 > 1.0f) {
-        errorMsg = "Error: --slow (z0) must be a float between 0 and 1.";
-        return false;
-    }
-    if (settings.z1 < 0.0f || settings.z1 > 1.0f) {
-        errorMsg = "Error: --low-cpu (z1) must be a float between 0 and 1.";
-        return false;
-    }
+    // Set default values for optional parameters
+    if (!timeLimit_set) settings.timeLimit = LONG_LONG_MAX_VAL;
+    if (!blkLimit_set) settings.blkLimit = LONG_LONG_MAX_VAL;
+    if (!eclipse_set) settings.eclipse = false; // Default to no eclipse attack
     
     return true;
-} 
+}

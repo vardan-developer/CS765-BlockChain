@@ -1,12 +1,13 @@
+#ifndef NETWORK_H
+#define NETWORK_H
+
 #include "def.hpp"
 #include "utils.hpp"
 
 class Network {
     public:
-    std::vector<std::vector<std::pair<int, int>>> networkTopology;
-    Network(int honest, int malicious) {
-        networkTopology = generateNetworkTopology(honest+malicious, float(honest)/(honest + malicious));
-    }
+    std::vector<std::vector<std::pair<int, int>>> networkTopology;          // Adjaceny Matrix
+    Network(int totalNodes, double maliciousFraction, bool malicious): networkTopology(malicious ? generateMaliciousNetworkTopology(totalNodes * maliciousFraction): generateNetworkTopology(totalNodes, maliciousFraction * totalNodes)) {}
     float getLatency(int i, int j) {
         return networkTopology[i][j].first + ceil(getExponentialRandom(96.0 * Kb * 1000/networkTopology[i][j].second)) + ceil((Kb * 8.0 * 1000)/networkTopology[i][j].second);
     }
@@ -18,3 +19,5 @@ class Network {
         return neighbors;
     }
 };
+
+#endif

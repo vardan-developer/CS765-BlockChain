@@ -5,7 +5,6 @@
 #include <time.h>
 #include "block.hpp"
 #include "def.hpp"
-#include "miner.hpp"
 #include "transaction.hpp"
 
 /**

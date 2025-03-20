@@ -4,24 +4,30 @@
 #include "block.hpp"
 #include "event.hpp"
 #include "miner.hpp"
+#include "network.hpp"
+#include "parser.hpp"
 #include <ctime>
 
 
 class Simulator{
 private:
-    std::vector<Miner *> miners;
-    std::priority_queue<Event*, std::vector<Event*>, std::greater<Event*>> events;
-    time_t currentTime;
     int totalMiners;
     int txnInterval;
     int blkInterval;
+    double maliciousFraction;
+    double Tt;
     time_t timeLimit;
     long long blkCount;
+    time_t currentTime;
+    Network *honestNetwork, *maliciousNetwork;
+    std::vector<Miner *> miners;
+    std::priority_queue<Event*, std::vector<Event*>, std::greater<Event*>> events;
     Block createGenesisBlock();
-    void generateGraphViz(const std::string& filename = "peerGraph.dot");
+    void generateGraphViz(const std::string& honestNetworkFile = "honestGraph.dot", const std::string& maliciousNetworkFile = "maliciousGraph.dot");
     
 public:
-    Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit = 10 * 60 * 1000, long long blkCount = 100);
+    // Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit = 10 * 60 * 1000, long long blkCount = 100);
+    Simulator(ProgramSettings & settings);
     ~Simulator();
     void run();
     void getEvents();

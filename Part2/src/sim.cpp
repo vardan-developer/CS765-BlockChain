@@ -1,26 +1,26 @@
 #include "sim.hpp"
 #include <cerrno>
 #include <ctime>
+#include <fstream>
 #include <iostream>
 #include <vector>
 #include "block.hpp"
 #include "def.hpp"
 #include "event.hpp"
-#include "network.hpp"
+#include "miner.hpp"
+#include "parser.hpp"
 #include "transaction.hpp"
 
 // extern std::vector<std::vector<std::pair<int, int> > > networkTopology;
 // extern std::vector<std::vector<std::pair<int, int> > > networkTopologyMalicious;
-extern Network honestNetwork;
-extern Network maliciousNetwork;
-extern std::set<minerID_t> highCPUMiners;
-extern std::set<minerID_t> fastMiners;
-extern std::set<minerID_t> slowMiners;
+// extern std::set<minerID_t> highCPUMiners;
+extern std::set<minerID_t> maliciousMiners;
+extern std::set<minerID_t> honestMiners;
 
 // Generates a GraphViz visualization of the network topology
 // Creates a graph showing miners and their connections, with colors indicating miner types
-void Simulator::generateGraphViz(const std::string& filename) {
-    std::ofstream file(filename);
+void Simulator::generateGraphViz(const std::string& honestNetworkFile, const std::string& maliciousNetworkFile) {
+    std::ofstream file(honestNetworkFile);
     if (!file.is_open()) {
         std::cerr << "Error opening file!" << std::endl;
         return;
@@ -35,23 +35,53 @@ void Simulator::generateGraphViz(const std::string& filename) {
     file << "    style=filled;\n";
     file << "    color=lightgrey;\n";
     file << "    node [shape=circle, style=filled, width=0.05, height=0.05, fontsize=8, margin=0.0];\n";
-    file << "    l1 [label=\"Fast/High\", fillcolor=\"green\"];\n";
-    file << "    l2 [label=\"Fast/Low\", fillcolor=\"red\"];\n";
-    file << "    l3 [label=\"Slow/High\", fillcolor=\"lightblue\"];\n";
-    file << "    l4 [label=\"Slow/Low\", fillcolor=\"lightgray\"];\n";
+    file << "    l2 [label=\"Malicious\", fillcolor=\"red\"];\n";
+    file << "    l3 [label=\"Honest\", fillcolor=\"lightblue\"];\n";
     file << "  }\n\n";
 
-    int numMiners = networkTopology.size();
-
-    for (int i = 0; i < numMiners; i++) {
-        std::string color = (fastMiners.count(i)) ? ( highCPUMiners.count(i) ? "green" : "red") : ( highCPUMiners.count(i) ? "lightblue" : "lightgray");
-
+    for (int i = 0; i < totalMiners; i++) {
+        std::string color = (maliciousMiners.count(i)) ? "red" : "lightblue";
         file << "  " << i << " [label=\"" << i << "\", fillcolor=\"" << color << "\"];\n";
     }
 
-    for (int i = 0; i < numMiners; i++) {
-        for (int j = i + 1; j < numMiners; j++) { 
-            if (networkTopology[i][j].first >= 0) {
+    for (int i = 0; i < totalMiners; i++) {
+        for (int j = i + 1; j < totalMiners; j++) { 
+            if (honestNetwork->networkTopology[i][j].first >= 0) {
+                file << "  " << i << " -- " << j << " [color=blue];\n";
+            }
+        }
+    }
+
+    file << "}\n";
+    file.close();
+
+    file = std::ofstream(maliciousNetworkFile);
+    if (!file.is_open()) {
+        std::cerr << "Error opening file!" << std::endl;
+        return;
+    }
+
+    file << "graph Network {\n";
+    file << "  node [shape=circle, style=filled, fontname=\"Arial\", width=0.5, height=0.5];\n";
+
+    // Add legend
+    file << "  subgraph cluster_legend {\n";
+    file << "    label=\"Legend\";\n";
+    file << "    style=filled;\n";
+    file << "    color=lightgrey;\n";
+    file << "    node [shape=circle, style=filled, width=0.05, height=0.05, fontsize=8, margin=0.0];\n";
+    file << "  }\n\n";
+
+    int totalMaliciousNodes = maliciousNetwork->networkTopology.size();
+
+    for (int i = 0; i < totalMaliciousNodes; i++) {
+        std::string color = "red";
+        file << "  " << i << " [label=\"" << i << "\", fillcolor=\"" << color << "\"];\n";
+    }
+
+    for (int i = 0; i < totalMaliciousNodes; i++) {
+        for (int j = i + 1; j < totalMaliciousNodes; j++) { 
+            if (maliciousNetwork->networkTopology[i][j].first >= 0) {
                 file << "  " << i << " -- " << j << " [color=blue];\n";
             }
         }
@@ -67,23 +97,47 @@ void Simulator::generateGraphViz(const std::string& filename) {
 // blkInterval: base block interval
 // timeLimit: simulation time limit
 // blkCount: number of blocks to simulate
-Simulator::Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit, long long blkCount) {
-    totalMiners = n;
-    txnInterval = txnInterval;
-    blkInterval = blkInterval; // this is I for each miner it will be I/(fraction of hashing power)
-    int totalHashingPower = 0;
-    for(int i = 0; i < n; i++){
-        totalHashingPower += (highCPUMiners.count(i) > 0) ? 10 : 1;
-    }
-    currentTime = 0;
+
+// Simulator::Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit, long long blkCount) {
+//     totalMiners = n;
+//     txnInterval = txnInterval;
+//     blkInterval = blkInterval; // this is I for each miner it will be I/(fraction of hashing power)
+//     int totalHashingPower = 0;
+//     for(int i = 0; i < n; i++){
+//         totalHashingPower += (highCPUMiners.count(i) > 0) ? 10 : 1;
+//     }
+//     currentTime = 0;
+//     Block genesisBlock = createGenesisBlock();
+//     miners.reserve(n);
+//     for(int i = 0; i < n; i++){
+//         Miner * new_miner = new Miner(i, n, txnInterval, blkInterval*(totalHashingPower/(highCPUMiners.count(i) > 0 ? 10 : 1)), genesisBlock);
+//         miners.push_back(new_miner);
+//     }
+//     this->timeLimit = timeLimit;
+//     this->blkCount = blkCount;
+// }
+
+Simulator::Simulator(ProgramSettings & settings):
+    totalMiners(settings.totalNodes),
+    txnInterval(settings.Ttx),
+    blkInterval(settings.I),
+    maliciousFraction(settings.malicious),
+    Tt(settings.Tt),
+    timeLimit(settings.timeLimit),
+    blkCount(settings.blkLimit),
+    currentTime(0)
+{
+    honestNetwork = new Network(totalMiners, maliciousFraction, false);
+    honestNetwork = new Network(totalMiners, maliciousFraction, true);
     Block genesisBlock = createGenesisBlock();
-    miners.reserve(n);
-    for(int i = 0; i < n; i++){
-        Miner * new_miner = new Miner(i, n, txnInterval, blkInterval*(totalHashingPower/(highCPUMiners.count(i) > 0 ? 10 : 1)), genesisBlock);
+    miners.reserve(totalMiners);
+    for(int i = 0; i < totalMiners * maliciousFraction; i++) {
+        Miner * new_miner = new MaliciousMiner(i, totalMiners, txnInterval, blkInterval/totalMiners, genesisBlock);
         miners.push_back(new_miner);
     }
-    this->timeLimit = timeLimit;
-    this->blkCount = blkCount;
+    for(int i = totalMiners * maliciousFraction; i < totalMiners; i++) {
+        Miner * new_miner = new Miner(i, totalMiners, txnInterval, blkInterval/totalMiners, genesisBlock);
+    }
 }
 
 // Destructor: Cleans up resources and prints final statistics
@@ -93,15 +147,15 @@ Simulator::~Simulator() {
     std::vector<float> fast_high, fast_low, slow_high, slow_low;
     float tempRatio;
     for ( Miner * miner : miners) {
-        bool fast = fastMiners.count(miner->getID());
-        bool high = highCPUMiners.count(miner->getID());
-        tempRatio = miner->getRatio();
-        miner->printSummary(fast, high);
-        if(tempRatio == -1) {delete miner; continue;}
-        if(fast && high) fast_high.push_back(tempRatio);
-        else if(fast && !high) fast_low.push_back(tempRatio);
-        else if(!fast && high) slow_high.push_back(tempRatio);
-        else slow_low.push_back(tempRatio);
+        // bool fast = maliciousMiners.count(miner->getID());
+        // bool high = highCPUMiners.count(miner->getID());
+        // tempRatio = miner->getRatio();
+        // miner->printSummary(fast, high);
+        // if(tempRatio == -1) {delete miner; continue;}
+        // if(fast && high) fast_high.push_back(tempRatio);
+        // else if(fast && !high) fast_low.push_back(tempRatio);
+        // else if(!fast && high) slow_high.push_back(tempRatio);
+        // else slow_low.push_back(tempRatio);
         delete miner;
     }
 
@@ -169,15 +223,15 @@ std::string eventTypeToString(EventType type) {
 void Simulator::processSendHashEvent(HashEvent * event) {
     time_t latency;
     if (event->receiver < 0) {
-        std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork.getNeighbors(event->sender) : honestNetwork.getNeighbors(event->sender);
+        std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
-            latency = event->malicious ? maliciousNetwork.getLatency(event->sender, neighbor) : honestNetwork.getLatency(event->sender, neighbor);
+            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);
             HashEvent* newEvent = new HashEvent(EventType::RECEIVE_HASH, event->hash, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
             this->events.push((Event*) newEvent);
         }
     } else {
-        latency = event->malicious ? maliciousNetwork.getLatency(event->sender, event->receiver) : honestNetwork.getLatency(event->sender, event->receiver);
+        latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver) : honestNetwork->getLatency(event->sender, event->receiver);
         time_t latency;
         HashEvent* newEvent = new HashEvent(EventType::RECEIVE_HASH, event->hash, event->timestamp + latency, event->owner, event->sender, event->receiver, event->broadcast, event->malicious);
         events.push((Event*) newEvent);
@@ -187,15 +241,15 @@ void Simulator::processSendHashEvent(HashEvent * event) {
 void Simulator::processSendBlockEvent(BlockEvent * event) {
     time_t latency;
     if (event->receiver < 0) {
-        std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork.getNeighbors(event->sender) : honestNetwork.getNeighbors(event->sender);
+        std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
-            latency = event->malicious ? maliciousNetwork.getLatency(event->sender, neighbor) : honestNetwork.getLatency(event->sender, neighbor);
+            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);
             BlockEvent* newEvent = new BlockEvent(EventType::RECEIVE_BLOCK, event->block, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
             this->events.push((Event*) newEvent);
         }
     } else {
-        latency = event->malicious ? maliciousNetwork.getLatency(event->sender, event->receiver) : honestNetwork.getLatency(event->sender, event->receiver);
+        latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver) : honestNetwork->getLatency(event->sender, event->receiver);
         time_t latency;
         BlockEvent* newEvent = new BlockEvent(EventType::RECEIVE_BLOCK, event->block, event->timestamp + latency, event->owner, event->sender, event->receiver, event->broadcast, event->malicious);
         events.push((Event*) newEvent);
@@ -205,15 +259,15 @@ void Simulator::processSendBlockEvent(BlockEvent * event) {
 void Simulator::processSendTransactionEvent(TransactionEvent * event) {
     time_t latency;
     if (event->receiver < 0) {
-        std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork.getNeighbors(event->sender) : honestNetwork.getNeighbors(event->sender);
+        std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
-            latency = event->malicious ? maliciousNetwork.getLatency(event->sender, neighbor) : honestNetwork.getLatency(event->sender, neighbor);
+            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);
             TransactionEvent* newEvent = new TransactionEvent(EventType::RECEIVE_TRANSACTION, event->transaction, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
             this->events.push((Event*) newEvent);
         }
     } else {
-        latency = event->malicious ? maliciousNetwork.getLatency(event->sender, event->receiver) : honestNetwork.getLatency(event->sender, event->receiver);
+        latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver) : honestNetwork->getLatency(event->sender, event->receiver);
         time_t latency;
         TransactionEvent* newEvent = new TransactionEvent(EventType::RECEIVE_TRANSACTION, event->transaction, event->timestamp + latency, event->owner, event->sender, event->receiver, event->broadcast, event->malicious);
         events.push((Event*) newEvent);
@@ -223,15 +277,15 @@ void Simulator::processSendTransactionEvent(TransactionEvent * event) {
 void Simulator::processSendGetEvent(GetEvent * event) {
     time_t latency;
     if (event->receiver < 0) {
-        std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork.getNeighbors(event->sender) : honestNetwork.getNeighbors(event->sender);
+        std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
-            latency = event->malicious ? maliciousNetwork.getLatency(event->sender, neighbor) : honestNetwork.getLatency(event->sender, neighbor);
+            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);
             GetEvent* newEvent = new GetEvent(EventType::RECEIVE_GET, event->hash, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
             this->events.push((Event*) newEvent);
         }
     } else {
-        latency = event->malicious ? maliciousNetwork.getLatency(event->sender, event->receiver) : honestNetwork.getLatency(event->sender, event->receiver);
+        latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver) : honestNetwork->getLatency(event->sender, event->receiver);
         time_t latency;
         GetEvent* newEvent = new GetEvent(EventType::RECEIVE_GET, event->hash, event->timestamp + latency, event->owner, event->sender, event->receiver, event->broadcast, event->malicious);
         events.push((Event*) newEvent);
@@ -257,10 +311,10 @@ inline void Simulator::processReceiveGetEvent(GetEvent * event) {
 void Simulator::processBroadcastPrivateChain(BroadcastPrivateChainEvent* event) {
     time_t latency;
     if (event->receiver < 0) {
-        std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork.getNeighbors(event->sender) : honestNetwork.getNeighbors(event->sender);
+        std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
-            latency = event->malicious ? maliciousNetwork.getLatency(event->sender, neighbor) : honestNetwork.getLatency(event->sender, neighbor);
+            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);
             BroadcastPrivateChainEvent* newEvent = new BroadcastPrivateChainEvent(EventType::RECEIVE_GET, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
             this->events.push((Event*) newEvent);
         }

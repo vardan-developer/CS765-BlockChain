@@ -4,8 +4,8 @@
 std::random_device rd;
 std::mt19937 gen(rd()); 
 // std::mt19937 gen(25); // Commented out fixed seed
-std::set<minerID_t> fastMiners;  // Set to track miners with fast network connections
-std::set<minerID_t> slowMiners;  // Set to track miners with slow network connections
+std::set<minerID_t> maliciousMiners;  // Set to track miners with fast network connections
+std::set<minerID_t> honestMiners;  // Set to track miners with slow network connections
 
 // Static counter initialization for block and transaction IDs
 blockID_t Counter::blockIDCount = 1;
@@ -212,40 +212,34 @@ std::vector<std::vector<minerID_t> > generate_graph(int n) {
 // Generates network topology with latency and bandwidth parameters
 // z0 represents the fraction of slow miners in the network
 // Returns a matrix of pairs (latency, bandwidth) for each connection
-std::vector<std::vector<std::pair<int, int> > > generateNetworkTopology(int n, float z0){
-    std::vector<std::vector<minerID_t> > adj = generate_graph(n);
-    std::vector<std::vector<minerID_t> > adj_matrix(n, std::vector<minerID_t>(n, -1));
-    for(int i = 0; i < n; i++){
+std::vector<std::vector<std::pair<int, int>>> generateNetworkTopology(int totalNodes, int totalMaliciousNodes){
+    std::vector<std::vector<minerID_t>> adj = generate_graph(totalNodes);
+    std::vector<std::vector<minerID_t>> adj_matrix(totalNodes, std::vector<minerID_t>(totalNodes, -1));
+    for(int i = 0; i < totalNodes; i++){
         for(int j = 0; j < adj[i].size(); j++){
             adj_matrix[i][adj[i][j]] = adj[i][j];
         }
     }
-    std::vector<std::vector<std::pair<int, int> > > networkTopology(n);
-    for(int i = 0; i < n; i++){
+    std::vector<std::vector<std::pair<int, int> > > networkTopology(totalNodes);
+    for(int i = 0; i < totalNodes; i++){
         networkTopology[i] = std::vector<std::pair<int, int> > (adj_matrix[i].size());
     }
 
-    fastMiners.clear();
-    slowMiners.clear();
+    maliciousMiners.clear();
+    honestMiners.clear();
 
-    std::vector<int> perm = getRandomPermutation(n);
+    // std::vector<int> perm = getRandomPermutation(totalNodes);
 
-    for(int i = 0; i < z0 * n; i++){
-        slowMiners.insert(perm[i]);
-    }
-    for(int i = z0*n; i < n; i++) {
-        fastMiners.insert(perm[i]);
-    }
+    for(int i = 0; i < totalMaliciousNodes; i++) maliciousMiners.insert(i);
+    for(int i = 0; i < totalNodes; i++) honestMiners.insert(i);
 
-    for(int i = 0; i < n; i++){
-        for(int j = 0; j < n; j++){
-            minerID_t u = i;
-            minerID_t v = j;
+    for(int i = 0; i < totalNodes; i++){
+        for(int j = 0; j < totalNodes; j++){
             if(adj_matrix[i][j] == -1){
                 networkTopology[i][j] = std::make_pair(-1, -1);
                 continue;
             }
-            if(slowMiners.count(u) > 0 || slowMiners.count(v) > 0){
+            if(honestMiners.count(i) > 0 || honestMiners.count(j) > 0){
                 networkTopology[i][j] = std::make_pair(getUniformRandom(10, 500), (5*Mb));
             }
             else{
@@ -256,14 +250,46 @@ std::vector<std::vector<std::pair<int, int> > > generateNetworkTopology(int n, f
     return networkTopology;
 }
 
+std::vector<std::vector<std::pair<int, int>>> generateMaliciousNetworkTopology(int totalMaliciousNodes){
+    std::vector<std::vector<minerID_t>> adj = generate_graph(totalMaliciousNodes);
+    std::vector<std::vector<minerID_t>> adj_matrix(totalMaliciousNodes, std::vector<minerID_t>(totalMaliciousNodes, -1));
+    for(int i = 0; i < totalMaliciousNodes; i++){
+        for(int j = 0; j < adj[i].size(); j++){
+            adj_matrix[i][adj[i][j]] = adj[i][j];
+        }
+    }
+    std::vector<std::vector<std::pair<int, int> > > networkTopology(totalMaliciousNodes);
+    for(int i = 0; i < totalMaliciousNodes; i++){
+        networkTopology[i] = std::vector<std::pair<int, int> > (adj_matrix[i].size());
+    }
+
+    for(int i = 0; i < totalMaliciousNodes; i++){
+        for(int j = 0; j < totalMaliciousNodes; j++){
+            if(adj_matrix[i][j] == -1){
+                networkTopology[i][j] = std::make_pair(-1, -1);
+                continue;
+            }
+            if(honestMiners.count(i) > 0 || honestMiners.count(j) > 0){
+                networkTopology[i][j] = std::make_pair(getUniformRandom(1, 10), (5*Mb));
+            }
+            else{
+                networkTopology[i][j] = std::make_pair(getUniformRandom(1, 10), (100*Mb));
+            }
+        }
+    }
+    return networkTopology;
+}
+
 // Returns a set of high CPU miners
 // z1 represents the fraction of low CPU miners
 // (1-z1) represents the fraction of high CPU miners
-std::set<minerID_t> getHighCPUMiners(int n, float z1){
-    std::set<minerID_t> highCPUMiners;
-    std::vector<int> perm = getRandomPermutation(n);
-    for(int i = 0; i < (1-z1) * n; i++){
-        highCPUMiners.insert(perm[i]);
-    }
-    return highCPUMiners;   
-}
+
+// Not needed for Part2
+// std::set<minerID_t> getHighCPUMiners(int n, float z1){
+//     std::set<minerID_t> highCPUMiners;
+//     std::vector<int> perm = getRandomPermutation(n);
+//     for(int i = 0; i < (1-z1) * n; i++){
+//         highCPUMiners.insert(perm[i]);
+//     }
+//     return highCPUMiners;   
+// }
