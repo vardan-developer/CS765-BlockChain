@@ -44,6 +44,7 @@ public:
     void processSendGetEvent(GetEvent * event);
     void processReceiveGetEvent(GetEvent * event);
     void processBroadcastPrivateChain(BroadcastPrivateChainEvent* event);
+    void processBlockCreation(HashEvent* event);
 };
 
 #endif

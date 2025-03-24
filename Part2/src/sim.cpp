@@ -16,6 +16,7 @@
 // extern std::set<minerID_t> highCPUMiners;
 extern std::set<minerID_t> maliciousMiners;
 extern std::set<minerID_t> honestMiners;
+time_t TIMEOUT;
 
 // Generates a GraphViz visualization of the network topology
 // Creates a graph showing miners and their connections, with colors indicating miner types
@@ -127,6 +128,7 @@ Simulator::Simulator(ProgramSettings & settings):
     blkCount(settings.blkLimit),
     currentTime(0)
 {
+    TIMEOUT = settings.Tt;
     honestNetwork = new Network(totalMiners, maliciousFraction, false);
     maliciousNetwork = new Network(totalMiners, maliciousFraction, true);
     Block genesisBlock = createGenesisBlock();
@@ -138,7 +140,7 @@ Simulator::Simulator(ProgramSettings & settings):
         miners.push_back(new_miner);
     }
     for(int i = totalMiners * maliciousFraction; i < totalMiners; i++) {
-        Miner * new_miner = new Miner(i, totalMiners, txnInterval, blkInterval/totalMiners, genesisBlock);
+        Miner * new_miner = new Miner(i, totalMiners, txnInterval, blkInterval/totalMiners, genesisBlock, honestNetwork->getNeighbors(i));
     }
 }
 
@@ -326,8 +328,9 @@ void Simulator::processBroadcastPrivateChain(BroadcastPrivateChainEvent* event) 
 }
 
 void Simulator::processBlockCreation(HashEvent* event) {
-    if(miners[event->owner].confirmBlock(*event)){
+    if(miners[event->owner]->confirmBlock(*event)){
         std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
+        time_t latency;
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
             latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);

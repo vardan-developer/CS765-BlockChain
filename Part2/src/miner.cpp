@@ -4,7 +4,7 @@
 
 // Network topology representing connections between miners
 extern std::vector<std::vector<std::pair<int, int> > > networkTopology;
-extern int TIMEOUT;
+extern time_t TIMEOUT;
 
 // Constructor: initializes a miner with given ID, network parameters and genesis block
 Miner::Miner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors)
@@ -57,6 +57,80 @@ Miner& Miner::operator=(const Miner&& other) {
 bool Miner::operator==(const Miner& other) {
     return this->id == other.id;
 }
+
+// Constructor: initializes a malicious miner with given parameters
+MaliciousMiner::MaliciousMiner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors, std::vector<minerID_t> malicious_neighbors, bool eclipse)
+    : Miner(id, totalMiners, txnInterval, blkInterval, genesisBlock, neighbors), eclipse(eclipse), maliciousNeighbors(malicious_neighbors) {}
+
+// Copy constructor for MaliciousMiner
+MaliciousMiner::MaliciousMiner(const MaliciousMiner& other)
+    : Miner(other), eclipse(other.eclipse), maliciousNeighbors(other.maliciousNeighbors), receivedBroadcastPrivateChain(other.receivedBroadcastPrivateChain) {}
+
+// Move constructor for MaliciousMiner
+MaliciousMiner::MaliciousMiner(const MaliciousMiner&& other)
+    : Miner(std::move(other)), eclipse(other.eclipse), maliciousNeighbors(other.maliciousNeighbors), receivedBroadcastPrivateChain(std::move(other.receivedBroadcastPrivateChain)) {}
+
+// Assignment operator for MaliciousMiner
+MaliciousMiner& MaliciousMiner::operator=(const MaliciousMiner& other) {
+    if (this == &other) return *this;
+    Miner::operator=(other);
+    this->eclipse = other.eclipse;
+    this->maliciousNeighbors = other.maliciousNeighbors;
+    this->receivedBroadcastPrivateChain = other.receivedBroadcastPrivateChain;
+    return *this;
+}
+
+// Move assignment operator for MaliciousMiner
+MaliciousMiner& MaliciousMiner::operator=(const MaliciousMiner&& other) {
+    if (this == &other) return *this;
+    Miner::operator=(std::move(other));
+    this->eclipse = other.eclipse;
+    this->maliciousNeighbors = other.maliciousNeighbors;
+    this->receivedBroadcastPrivateChain = std::move(other.receivedBroadcastPrivateChain);
+    return *this;
+}
+
+// Destructor for MaliciousMiner
+MaliciousMiner::~MaliciousMiner(){
+    //No dynamic memory to deallocate specific to MaliciousMiner
+}
+
+// Constructor for RingMaster
+RingMaster::RingMaster(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors, std::vector<minerID_t> malicious_neighbors, bool eclipse)
+    : MaliciousMiner(id, totalMiners, txnInterval, blkInterval, genesisBlock, neighbors, malicious_neighbors, eclipse) {}
+
+// Copy constructor for RingMaster
+RingMaster::RingMaster(const RingMaster& other)
+    : MaliciousMiner(other), branchBlock(other.branchBlock), privateBlockTree(other.privateBlockTree) {}
+
+// Move constructor for RingMaster
+RingMaster::RingMaster(const RingMaster&& other)
+    : MaliciousMiner(std::move(other)), branchBlock(std::move(other.branchBlock)), privateBlockTree(std::move(other.privateBlockTree)) {}
+
+// Assignment operator for RingMaster
+RingMaster& RingMaster::operator=(const RingMaster& other) {
+    if (this == &other) return *this;
+    MaliciousMiner::operator=(other);
+    this->branchBlock = other.branchBlock;
+    this->privateBlockTree = other.privateBlockTree;
+    return *this;
+}
+
+// Move assignment operator for RingMaster
+RingMaster& RingMaster::operator=(const RingMaster&& other) {
+    if (this == &other) return *this;
+    MaliciousMiner::operator=(std::move(other));
+    this->branchBlock = std::move(other.branchBlock);
+    this->privateBlockTree = std::move(other.privateBlockTree);
+    return *this;
+}
+
+// Destructor for RingMaster
+RingMaster::~RingMaster(){
+    //No dynamic memory to deallocate specific to RingMaster
+}
+
+
 
 // Returns the unique identifier of this miner
 int Miner::getID() const {

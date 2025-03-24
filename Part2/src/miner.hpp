@@ -6,6 +6,7 @@
 #include "transaction.hpp"
 #include "event.hpp"
 #include <functional>   
+#include <vector>
 /**
  * @brief Class representing a miner in the blockchain network
  * Handles transaction creation, block mining, and network communication
@@ -51,11 +52,11 @@ public:
     virtual std::vector<Event*> receiveBlock(BlockEvent event, bool malicious = false);
     std::vector<Event*> receiveHash(HashEvent event);
     virtual std::vector<Event*> receiveGet(GetEvent event);
-    hash_t genHash(Block block);
+    inline hash_t genHash(Block block);
     std::vector<Event*> genGetRequest(time_t currentTime);
     std::vector<minerID_t> getNeighbors() ;
     virtual bool confirmBlock(HashEvent event);
-    int getID() const;
+    inline int getID() const;
     virtual void printMiner();
     virtual void printSummary(bool fast, bool high);
     float getRatio();
@@ -68,22 +69,19 @@ protected:
     std::vector<minerID_t> maliciousNeighbors;
     std::map<blockID_t, bool> receivedBroadcastPrivateChain;
 public:
-    MaliciousMiner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors, std::vector<minerID_t> malicious_neighbors, bool eclipse = false){};
+    MaliciousMiner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors, std::vector<minerID_t> malicious_neighbors, bool eclipse = false);
     // Constructor: Initialize miner with ID and network parameters
-    bool operator==(const MaliciousMiner& other){} ;
-    MaliciousMiner(const MaliciousMiner&& other){};
-    MaliciousMiner& operator=(const MaliciousMiner&& other){};
-    MaliciousMiner(const MaliciousMiner& other){};
-    MaliciousMiner& operator=(const MaliciousMiner& other){}
+    MaliciousMiner(const MaliciousMiner&& other);
+    MaliciousMiner& operator=(const MaliciousMiner&& other);
+    MaliciousMiner(const MaliciousMiner& other);
+    MaliciousMiner& operator=(const MaliciousMiner& other);
     ~MaliciousMiner();
     virtual std::vector<Event*> receiveBlock(BlockEvent event, bool malicious = false);
     std::vector<Event*> receiveGet(GetEvent event);
     std::vector<Event*> receiveTransactions(TransactionEvent event, bool malicious = false);
     std::vector<Event*> genTransaction(time_t timestamp, bool malicious=true);
     std::vector<Event*> receiveBroadcastPrivateChain(BroadcastPrivateChainEvent event);
-    virtual std::vector<Event*> genBlock(time_t currentTime) = 0;
-    virtual void printMiner();
-    virtual void printSummary(bool fast, bool high);
+    virtual std::vector<Event*> genBlock(time_t currentTime) {return std::vector<Event*>();}
     virtual bool confirmBlock(HashEvent event);
 };
 
@@ -92,19 +90,16 @@ class RingMaster: public MaliciousMiner {
         Block branchBlock;
         BlockTree privateBlockTree;
     public:
-        RingMaster(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors, std::vector<minerID_t> malicious_neighbors, bool eclipse = false){};
-        bool operator==(const RingMaster& other){};
-        RingMaster(const RingMaster&& other){};
-        RingMaster& operator=(const RingMaster&& other){};
-        RingMaster(const RingMaster& other){};
-        RingMaster& operator=(const RingMaster& other){};
+        RingMaster(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors, std::vector<minerID_t> malicious_neighbors, bool eclipse = false);
+        RingMaster(const RingMaster&& other);
+        RingMaster& operator=(const RingMaster&& other);
+        RingMaster(const RingMaster& other);
+        RingMaster& operator=(const RingMaster& other);
         ~RingMaster();
         std::vector<Event*> receiveBlock(BlockEvent event);
         std::vector<Event*> genBlock(time_t currentTime);
         bool confirmBlock(HashEvent event);
         std::vector<Event*> checkAndBroadcastPrivate(time_t currentTime);
-        void printMiner();
-        void printSummary(bool fast, bool high);
 };
 
 #endif
