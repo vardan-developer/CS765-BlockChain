@@ -2,7 +2,7 @@
 
 // Initialize block with default values: id=0, height=0, no parent, empty transactions, 
 // timestamp=0, and invalid owner (-1)
-Block::Block(): id(0), height(0), parentID(0), transactions(), timestamp(0), owner(-1) {}
+Block::Block(): id(-1), height(0), parentID(0), transactions(), timestamp(0), owner(-1) {}
 
 // Full constructor initializing all block members using initialization list
 Block::Block(blockID_t id, uint64_t height, blockID_t parentID, 
@@ -58,4 +58,16 @@ bool Block::operator<(const Block& block) const {
 // Returns size in bytes (number of transactions * Kb * 8)
 size_t Block::dataSize() const {
     return transactions.size() * Kb * 8;
+}
+
+hash_t Block::hash() const {
+    hash_t hash_id = std::hash<blockID_t>{}(id);
+    hash_t hash_height = std::hash<uint64_t>{}(height);
+    hash_t hash_parentID = std::hash<blockID_t>{}(parentID);
+    hash_t hash_timestamp = std::hash<time_t>{}(timestamp);
+    hash_t hash_owner = std::hash<minerID_t>{}(owner);
+    hash_t hash_transactions = std::reduce(transactions.begin(), transactions.end(), hash_t(0), [](hash_t acc, Transaction t) {
+        return acc ^ t.hash();
+    });
+    return hash_id ^ hash_height ^ hash_parentID ^ hash_timestamp ^ hash_owner ^ hash_transactions;
 }

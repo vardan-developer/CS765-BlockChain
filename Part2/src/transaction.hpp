@@ -29,6 +29,7 @@ struct Transaction{
     bool operator > (const Transaction& other) const {
         return id > other.id;
     }
+    hash_t hash() const;
 };
 
 #endif

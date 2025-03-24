@@ -19,6 +19,8 @@
  * SEND_TRANSACTION: Event for sending a broadcast transaction
  */
 
+
+
 enum class EventType {
     SEND_TRANSACTION,
     RECEIVE_TRANSACTION,
@@ -75,8 +77,9 @@ struct HashEvent: Event {
 using GetEvent = HashEvent;
 
 struct BroadcastPrivateChainEvent: Event {
-    BroadcastPrivateChainEvent(EventType type, time_t timestamp, minerID_t owner, minerID_t sender, minerID_t receiver, bool broadcast = false, bool malicious = false):
-        Event(type, timestamp, owner, sender, receiver, broadcast, malicious) {}
+    blockID_t block_id;
+    BroadcastPrivateChainEvent(EventType type, blockID_t block_id, time_t timestamp, minerID_t owner, minerID_t sender, minerID_t receiver, bool broadcast = false, bool malicious = false):
+        Event(type, timestamp, owner, sender, receiver, broadcast, malicious), block_id(block_id) {}
 };
 
 /**

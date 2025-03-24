@@ -71,7 +71,7 @@ class BlockTree {
         bool switchToLongestChain(Block & block, std::set<Transaction> & memPool);
         int getBalance(minerID_t id = -1);  // Get balance for specific miner or self
         Block getCurrent();  // Get current head block
-        
+        Block getNextBlock(blockID_t blockID);
         // Visualization and analysis methods
         void exportToDot(const std::string & filename) const;  // Export tree in DOT format
         void printTree(std::string filename) const;
@@ -81,6 +81,7 @@ class BlockTree {
         long long getMainChainBlockCount();  // Count blocks in main chain
         float getRatio(long long totalBlocksGenerated);  // Calculate acceptance ratio
         float averageBranchLength();  // Calculate average branch length
+        Block getBlock(blockID_t blockID);  // Get block by ID
 };
 
 

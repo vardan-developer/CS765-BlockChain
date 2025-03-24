@@ -10,6 +10,8 @@ std::set<minerID_t> honestMiners;  // Set to track miners with slow network conn
 // Static counter initialization for block and transaction IDs
 blockID_t Counter::blockIDCount = 1;
 txnID_t Counter::txnIDCount = 1;
+id_t Counter::idCount = 1;
+
 
 blockID_t Counter::getBlockID(){
     return blockIDCount++;
@@ -19,6 +21,9 @@ txnID_t Counter::getTxnID(){
     return txnIDCount++;
 }
 
+id_t Counter::getID(){
+    return idCount++;
+}
 
 // Returns a random permutation of integers from 0 to n-1
 std::vector<int> getRandomPermutation(int n) {

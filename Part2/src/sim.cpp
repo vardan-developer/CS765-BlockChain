@@ -318,6 +318,8 @@ void Simulator::processBroadcastPrivateChain(BroadcastPrivateChainEvent* event) 
             BroadcastPrivateChainEvent* newEvent = new BroadcastPrivateChainEvent(EventType::RECEIVE_GET, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
             this->events.push((Event*) newEvent);
         }
+    } else {
+        ((MaliciousMiner*)(miners[event->receiver]))->receiveBroadcastPrivateChain(* event);
     }
 }
 

@@ -84,6 +84,8 @@ struct Block {
      * @return Size of the block in bytes
      */
     size_t dataSize() const;
+
+    hash_t hash() const;
 };
 
 #endif

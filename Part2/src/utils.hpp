@@ -22,10 +22,11 @@ class Counter {
 public:
     static blockID_t getBlockID();
     static txnID_t getTxnID();
-    
+    static id_t getID();
 private:
     static blockID_t blockIDCount;  // Declaration
     static txnID_t txnIDCount;      // Declaration
+    static id_t idCount;
 };
 
 

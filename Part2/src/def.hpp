@@ -14,10 +14,12 @@
 #include <fstream>
 #include <stack>
 #include <functional>
+#include <cstdint>
 
 using minerID_t = long long int;
 using txnID_t = long long int;
 using blockID_t = long long int;
+using hash_t = size_t;
 constexpr long long LONG_LONG_MAX_VAL = std::numeric_limits<long long>::max();
 
 const long long Mb = 1000000;

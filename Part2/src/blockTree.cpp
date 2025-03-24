@@ -30,6 +30,18 @@ BlockTreeNode & BlockTreeNode::operator=(const BlockTreeNode & other) {
     return *this;
 }
 
+Block BlockTree::getNextBlock(blockID_t blockID) {
+    BlockTreeNode * node = blockToNode[blockID];
+    if(node->children.empty()) {
+        return Block();
+    }
+    return node->children[0]->block;
+}
+
+Block BlockTree::getBlock(blockID_t blockID) {
+    return blockToNode[blockID]->block;
+}
+
 // Default constructor for BlockTree
 BlockTree::BlockTree()
     : id(0), genesis(nullptr), current(nullptr), 
