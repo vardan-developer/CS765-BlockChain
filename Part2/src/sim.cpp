@@ -131,8 +131,10 @@ Simulator::Simulator(ProgramSettings & settings):
     maliciousNetwork = new Network(totalMiners, maliciousFraction, true);
     Block genesisBlock = createGenesisBlock();
     miners.reserve(totalMiners);
-    for(int i = 0; i < totalMiners * maliciousFraction; i++) {
-        Miner * new_miner = new MaliciousMiner(i, totalMiners, txnInterval, blkInterval/totalMiners, genesisBlock);
+    Miner* ringMaster = new RingMaster(0, totalMiners, txnInterval, blkInterval/totalMiners, genesisBlock, honestNetwork->getNeighbors(0), maliciousNetwork->getNeighbors(0), settings.eclipse);
+    miners.push_back(ringMaster);
+    for(int i = 1; i < totalMiners * maliciousFraction; i++) {
+        Miner * new_miner = new MaliciousMiner(i, totalMiners, txnInterval, blkInterval/totalMiners, genesisBlock, honestNetwork->getNeighbors(i), maliciousNetwork->getNeighbors(i), settings.eclipse);
         miners.push_back(new_miner);
     }
     for(int i = totalMiners * maliciousFraction; i < totalMiners; i++) {
@@ -323,6 +325,18 @@ void Simulator::processBroadcastPrivateChain(BroadcastPrivateChainEvent* event) 
     }
 }
 
+void Simulator::processBlockCreation(HashEvent* event) {
+    if(miners[event->owner].confirmBlock(*event)){
+        std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
+        for(auto neighbor : neighbors){
+            if(neighbor == event->sender) continue;
+            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);
+            HashEvent* newEvent = new HashEvent(EventType::SEND_HASH, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
+            this->events.push((Event*) newEvent);
+        }
+    }
+}
+
 // Core event processing function
 // Handles different types of events and their propagation through the network:
 // - Transaction broadcasting
@@ -358,6 +372,9 @@ void Simulator::processEvent(Event * event) {
             break;
         case EventType::BROADCAST_PRIVATE_CHAIN:
             processBroadcastPrivateChain((BroadcastPrivateChainEvent*) event);
+            break;
+        case EventType::BLOCK_CREATION:
+        processBlockCreation((HashEvent*) event);
             break;
         default:
             std::cerr << "UNKNOWN EVENT ENCOUNTERED" << std::endl;

@@ -30,7 +30,8 @@ enum class EventType {
     RECEIVE_BLOCK,
     SEND_HASH,
     RECEIVE_HASH,
-    BROADCAST_PRIVATE_CHAIN
+    BROADCAST_PRIVATE_CHAIN,
+    BLOCK_CREATION
 };
 
 struct Event {

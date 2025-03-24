@@ -59,6 +59,7 @@ class BlockTree {
         BlockTree();
         BlockTree(minerID_t id);
         BlockTree(minerID_t id, Block genesisBlock);
+        BlockTree(minerID_t id, Block genesisBlock, std::map<minerID_t, int> balanceMap);
         ~BlockTree();
         BlockTree(const BlockTree & other);
         BlockTree & operator=(const BlockTree & other);
@@ -82,6 +83,7 @@ class BlockTree {
         float getRatio(long long totalBlocksGenerated);  // Calculate acceptance ratio
         float averageBranchLength();  // Calculate average branch length
         Block getBlock(blockID_t blockID);  // Get block by ID
+        std::map<minerID_t, int> getBalanceMap();  // Get balance map
 };
 
 

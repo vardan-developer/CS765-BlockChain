@@ -10,14 +10,14 @@ extern int TIMEOUT;
 Miner::Miner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors)
     : id(id), blockTree(id, genesisBlock), totalMiners(totalMiners), 
       txnInterval(txnInterval), blkInterval(blkInterval), 
-      processingTxnTime(-1), processingBlockID(-1), totalBlocksGenerated(0), neighbors(neighbors) {}
+      processingTxnTime(-1), totalBlocksGenerated(0), neighbors(neighbors) {}
 
 // Copy constructor: creates a deep copy of another miner instance
 Miner::Miner(const Miner& other)
     : id(other.id), blockTree(BlockTree(other.blockTree)), 
       totalMiners(other.totalMiners), txnInterval(other.txnInterval), 
       blkInterval(other.blkInterval), processingTxnTime(other.processingTxnTime), 
-      processingBlockID(other.processingBlockID), 
+      processingBlock(other.processingBlock), 
       totalBlocksGenerated(other.totalBlocksGenerated) {}
 
 // Assignment operator: performs deep copy assignment between miner instances
@@ -28,7 +28,7 @@ Miner& Miner::operator=(const Miner& other) {
     this->txnInterval = other.txnInterval;
     this->blkInterval = other.blkInterval;
     this->processingTxnTime = other.processingTxnTime;
-    this->processingBlockID = other.processingBlockID;
+    this->processingBlock = other.processingBlock;
     this->totalBlocksGenerated = other.totalBlocksGenerated;
     return *this;
 }
@@ -38,7 +38,7 @@ Miner::Miner(const Miner&& other)
     : id(other.id), blockTree(std::move(other.blockTree)), 
       totalMiners(other.totalMiners), txnInterval(other.txnInterval), 
       blkInterval(other.blkInterval), processingTxnTime(other.processingTxnTime), 
-      processingBlockID(other.processingBlockID) {}
+      processingBlock(other.processingBlock) {}
 
 // Move assignment operator: transfers ownership of resources between miner instances
 Miner& Miner::operator=(const Miner&& other) {
@@ -48,7 +48,7 @@ Miner& Miner::operator=(const Miner&& other) {
     this->txnInterval = other.txnInterval;
     this->blkInterval = other.blkInterval;
     this->processingTxnTime = other.processingTxnTime;
-    this->processingBlockID = other.processingBlockID;
+    this->processingBlock = other.processingBlock;
     this->totalBlocksGenerated = other.totalBlocksGenerated;
     return *this;
 }
@@ -117,6 +117,7 @@ std::vector<Event*> Miner::genTransaction(time_t currentTime, bool malicious) {
                  scheduledTxnTime, id, id, minerID_t(-1), true)};
     if(malicious) tmpEvent.push_back(new TransactionEvent(EventType::SEND_TRANSACTION, *transaction, 
                  scheduledTxnTime, id, id, minerID_t(-1), true, true));
+    return tmpEvent;
 }
 
 hash_t Miner::genHash(Block block) {
@@ -143,7 +144,7 @@ std::vector<Event*> Miner::genGetRequest(time_t currentTime) {
 // 3. Validates block before finalizing
 // Returns a block creation event
 std::vector<Event*> Miner::genBlock(time_t currentTime) {
-    if (processingBlockID > 0) {
+    if (processingBlock.id > 0) {
         return std::vector<Event*>();
     }
 
@@ -153,7 +154,6 @@ std::vector<Event*> Miner::genBlock(time_t currentTime) {
     blockID_t parentID = parent.id;
     int height = parent.height + 1;
     blockID_t blockID = Counter::getBlockID();
-    processingBlockID = blockID;
     time_t scheduledBlkTime = currentTime + static_cast<time_t>(expDelay);
 
     // Select transactions from mempool
@@ -193,9 +193,10 @@ std::vector<Event*> Miner::genBlock(time_t currentTime) {
             }
         }
     }
+    processingBlock = *block;
     hash_t hash_blk = genHash(*block);
     blockHashToID[hash_blk] = blockID;
-    return {new HashEvent(EventType::SEND_HASH, hash_blk, scheduledBlkTime, id, id, minerID_t(-1), true)};
+    return {new HashEvent(EventType::BLOCK_CREATION, hash_blk, scheduledBlkTime, id, id, minerID_t(-1), true)};
 }
 
 // Processes received transactions:
@@ -278,7 +279,7 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious) {
     } while ( possibleAddedChild.id >= 0 );
 
     if ( chainSwitched ) {
-        processingBlockID = -1;
+        processingBlock = Block();
         std::vector<Event*> genBlocks = this->genBlock(event.timestamp);
         newEvents.insert(newEvents.end(), genBlocks.begin(), genBlocks.end());
     }
@@ -330,14 +331,15 @@ std::vector<minerID_t> Miner::getNeighbors() {
 // Confirms block creation:
 // Returns true if the block matches currently processing block
 // Updates tree and resets processing state
-bool Miner::confirmBlock(BlockEvent event) {
-    if(event.block.id == processingBlockID) {
+bool Miner::confirmBlock(HashEvent event) {
+    if(event.hash == processingBlock.hash()){
         this->totalBlocksGenerated++;
-        blockTree.addBlock(event.block, event.timestamp);
-        blockTree.switchToLongestChain(event.block, memPool);
-        processingBlockID = -1;
+        blockTree.addBlock(processingBlock, event.timestamp);
+        blockTree.switchToLongestChain(processingBlock, memPool);
+        processingBlock = Block();
         return true;
     }
+    blockHashToID.erase(event.hash);
     return false;
 }
 
@@ -349,7 +351,7 @@ float Miner::getRatio() {
 // Prints debug information about miner's current state
 void Miner::printMiner(){
     std::cout << "Miner ID: " << id << std::endl;
-    std::cout << "Processing Block ID: " << processingBlockID << std::endl;
+    std::cout << "Processing Block ID: " << processingBlock.id << std::endl;
     std::cout << "Processing Transaction ID: " << processingTxnID << std::endl;
     std::cout << "Processing Block Time: " << processingBlockTime << std::endl;
     std::cout << "Processing Transaction Time: " << processingTxnTime << std::endl;
@@ -397,7 +399,7 @@ std::vector<Event*> MaliciousMiner::receiveBroadcastPrivateChain(BroadcastPrivat
         }
         std::vector<hash_t> hashes;
         Block block = blockTree.getBlock(event.block_id);
-        while(block.id != 0) {
+        while(block.id != -1) {
             hashes.push_back(block.hash());
             block = blockTree.getNextBlock(block.id);
         }
@@ -412,4 +414,114 @@ std::vector<Event*> MaliciousMiner::receiveBroadcastPrivateChain(BroadcastPrivat
 
 std::vector<Event*> MaliciousMiner::receiveTransactions(TransactionEvent event, bool malicious) {
     return Miner::receiveTransactions(event, true);
+}
+
+bool MaliciousMiner::confirmBlock(HashEvent event) {
+    return Miner::confirmBlock(event);
+}
+
+std::vector<Event*> RingMaster::receiveBlock(BlockEvent event){
+    if(event.block.owner != this->id) {
+        std::vector<Event*> newEvents = Miner::receiveBlock(event, true);
+        this->checkAndBroadcastPrivate(event.timestamp);
+        return newEvents;
+    }
+    return std::vector<Event*>();
+}
+
+bool RingMaster::confirmBlock(HashEvent event) {
+    if (processingBlock.hash() != event.hash) {
+        return false;
+    }
+    this->totalBlocksGenerated++;
+    privateBlockTree.addBlock(processingBlock, event.timestamp);
+    processingBlock = Block();
+    return true;
+}
+
+std::vector<Event*> RingMaster::checkAndBroadcastPrivate(time_t currentTime) {
+        
+    int honestLength = blockTree.getCurrent().height - branchBlock.height;
+    int privateLength = privateBlockTree.getCurrent().height - branchBlock.height;
+
+    if (honestLength == privateLength || honestLength == privateLength - 1) {
+        Block privateBlock = privateBlockTree.getNextBlock(branchBlock.id);
+        while(privateBlock.id >= 0) {
+            blockTree.addBlock(privateBlock, currentTime);
+            privateBlock = privateBlockTree.getNextBlock(privateBlock.id);
+        }
+        return std::vector<Event*> { new BroadcastPrivateChainEvent(EventType::BROADCAST_PRIVATE_CHAIN, privateBlockTree.getNextBlock(branchBlock.id).id, currentTime, id, id, -1, true, true) };
+        branchBlock = Block();
+        privateBlockTree = BlockTree();
+    }
+
+    return std::vector<Event*> ();
+
+}
+
+std::vector<Event*> RingMaster::genBlock(time_t currentTime){ //TODO: Implement
+    if (processingBlock.id > 0) {
+        return std::vector<Event*>();
+    }
+
+    BlockTree currentBlockTree = privateBlockTree;
+    if(branchBlock.id < 0){
+        currentBlockTree = blockTree;
+    }
+
+    double expDelay = getExponentialRandom(blkInterval);
+    Block parent = currentBlockTree.getCurrent();
+    blockID_t parentID = parent.id;
+    int height = parent.height + 1;
+    blockID_t blockID = Counter::getBlockID();
+    time_t scheduledBlkTime = currentTime + static_cast<time_t>(expDelay);
+
+    // Select transactions from mempool
+    std::vector<Transaction> transactions(memPool.begin(), memPool.end());
+    int totalTxn = transactions.size();
+    std::vector<Transaction> selectedTxn;
+
+    // Create coinbase transaction (mining reward)
+    Transaction coinbase(Counter::getTxnID(), TransactionType::COINBASE, 
+                        id, id, COINBASE_REWARD);
+    
+    // Create new block with coinbase transaction
+    Block* block = new Block(blockID, height, parentID, scheduledBlkTime, id);
+    block->transactions.push_back(coinbase);
+
+    // Add valid transactions from mempool
+    if (totalTxn > 0) {
+        int txnCount = getUniformRandom(0, std::min(Kb-1, totalTxn));
+        selectedTxn = std::vector<Transaction>(txnCount);
+        std::map<minerID_t, int> txnCountMap;
+        for(int i = 0; i < transactions.size() && block->transactions.size() < totalTxn; i++){
+            if (txnCountMap.find(transactions[i].sender) == txnCountMap.end()){
+                txnCountMap[transactions[i].sender] = 0;
+            }
+            int value = transactions[i].amount;
+            if (txnCountMap[transactions[i].sender] + value > currentBlockTree.getBalance(transactions[i].sender)){
+                continue;
+            }
+            txnCountMap[transactions[i].sender] += value;
+            block->transactions.push_back(transactions[i]);
+            memPool.erase(transactions[i]);
+        }
+        if (!currentBlockTree.validateBlock(*block)){
+            while(block->transactions.size() > 1){
+                memPool.insert(block->transactions.back());
+                block->transactions.pop_back();
+            }
+        }
+    }
+    hash_t hash_blk = genHash(*block);
+    blockHashToID[hash_blk] = blockID;
+
+    if (branchBlock.id < 0){
+        branchBlock = parent;
+        privateBlockTree = BlockTree(id, branchBlock, currentBlockTree.getBalanceMap());
+    }
+    processingBlock  = *block;
+    return {new HashEvent(EventType::BLOCK_CREATION, hash_blk, scheduledBlkTime, id, id, minerID_t(-1), true, true)};
+
+
 }

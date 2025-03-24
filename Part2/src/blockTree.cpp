@@ -59,6 +59,13 @@ BlockTree::BlockTree(minerID_t id, Block genesisBlock)
     blockToNode[genesis->block.id] = genesis;
 }
 
+BlockTree::BlockTree(minerID_t id, Block genesisBlock, std::map<minerID_t, int> balanceMap)
+    : id(id), genesis(new BlockTreeNode(genesisBlock)), current(genesis), 
+      file(std::ofstream ("logs/miner-" + std::to_string(id) + ".logs")) {
+    this->balanceMap = balanceMap;
+    this->blockToNode[genesisBlock.id] = genesis;
+}
+
 // Destructor - cleans up all nodes in the tree using BFS
 BlockTree::~BlockTree() {
     if (!genesis) {
@@ -485,4 +492,8 @@ float BlockTree::averageBranchLength() {
     }
 
     return (float)totalDistance / leaves.size();
+}
+
+std::map<minerID_t, int> BlockTree::getBalanceMap() {
+    return balanceMap;
 }

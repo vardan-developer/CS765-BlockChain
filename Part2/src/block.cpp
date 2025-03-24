@@ -66,7 +66,7 @@ hash_t Block::hash() const {
     hash_t hash_parentID = std::hash<blockID_t>{}(parentID);
     hash_t hash_timestamp = std::hash<time_t>{}(timestamp);
     hash_t hash_owner = std::hash<minerID_t>{}(owner);
-    hash_t hash_transactions = std::reduce(transactions.begin(), transactions.end(), hash_t(0), [](hash_t acc, Transaction t) {
+    hash_t hash_transactions = std::accumulate(transactions.begin(), transactions.end(), hash_t(0), [](hash_t acc, Transaction t) {
         return acc ^ t.hash();
     });
     return hash_id ^ hash_height ^ hash_parentID ^ hash_timestamp ^ hash_owner ^ hash_transactions;
