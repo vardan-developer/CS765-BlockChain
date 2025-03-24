@@ -2,6 +2,7 @@
 #define EVENT_H
 
 #include <ctime>
+#include <ostream>
 #include <time.h>
 #include "block.hpp"
 #include "def.hpp"
@@ -54,6 +55,10 @@ struct Event {
     }
     bool operator > (const Event& other) const {
         return timestamp > other.timestamp;
+    }
+    friend std::ostream& operator<< (std::ostream& stream, const Event& event) {
+        stream << "Event: " << static_cast<std::underlying_type<EventType>::type>(event.type) << ", Timestamp: " << event.timestamp << ", Owner: " << event.owner << ", Sender: " << event.sender << ", Receiver: " << event.receiver << ", Broadcast: " << event.broadcast << ", Malicious: " << event.malicious << std::endl;
+        return stream;
     }
 };
 

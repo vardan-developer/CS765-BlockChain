@@ -1,4 +1,5 @@
 #include "miner.hpp"
+#include "blockTree.hpp"
 #include "def.hpp"
 #include "utils.hpp"
 
@@ -60,17 +61,21 @@ bool Miner::operator==(const Miner& other) {
 
 // Constructor: initializes a malicious miner with given parameters
 MaliciousMiner::MaliciousMiner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors, std::vector<minerID_t> malicious_neighbors, bool eclipse)
-    : Miner(id, totalMiners, txnInterval, blkInterval, genesisBlock, neighbors), eclipse(eclipse), maliciousNeighbors(malicious_neighbors) {}
+    : Miner(id, totalMiners, txnInterval, blkInterval, genesisBlock, neighbors), eclipse(eclipse) {
+    this->maliciousNeighbors = malicious_neighbors;
+}
 
 // Copy constructor for MaliciousMiner
 MaliciousMiner::MaliciousMiner(const MaliciousMiner& other)
-    : Miner(other), eclipse(other.eclipse), maliciousNeighbors(other.maliciousNeighbors), receivedBroadcastPrivateChain(other.receivedBroadcastPrivateChain) {}
+    : Miner(other), eclipse(other.eclipse), receivedBroadcastPrivateChain(other.receivedBroadcastPrivateChain) {
+    this->maliciousNeighbors = other.maliciousNeighbors;
+}
 
 // Move constructor for MaliciousMiner
 MaliciousMiner::MaliciousMiner(const MaliciousMiner&& other)
-    : Miner(std::move(other)), eclipse(other.eclipse), maliciousNeighbors(other.maliciousNeighbors), receivedBroadcastPrivateChain(std::move(other.receivedBroadcastPrivateChain)) {}
-
-// Assignment operator for MaliciousMiner
+    : Miner(std::move(other)), eclipse(other.eclipse), receivedBroadcastPrivateChain(std::move(other.receivedBroadcastPrivateChain)) {
+    this->maliciousNeighbors = other.maliciousNeighbors;
+}
 MaliciousMiner& MaliciousMiner::operator=(const MaliciousMiner& other) {
     if (this == &other) return *this;
     Miner::operator=(other);
@@ -97,7 +102,7 @@ MaliciousMiner::~MaliciousMiner(){
 
 // Constructor for RingMaster
 RingMaster::RingMaster(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors, std::vector<minerID_t> malicious_neighbors, bool eclipse)
-    : MaliciousMiner(id, totalMiners, txnInterval, blkInterval, genesisBlock, neighbors, malicious_neighbors, eclipse) {}
+    : MaliciousMiner(id, totalMiners, txnInterval, blkInterval, genesisBlock, neighbors, malicious_neighbors, eclipse), privateBlockTree(BlockTree()) {}
 
 // Copy constructor for RingMaster
 RingMaster::RingMaster(const RingMaster& other)
@@ -140,8 +145,8 @@ int Miner::getID() const {
 // Generates and returns both transaction and block events for the current timestamp
 std::vector<Event*> Miner::getEvents(time_t currentTime) {
     std::vector<Event*> events;
-    std::vector<Event*> transactions = genTransaction(currentTime);
-    std::vector<Event*> blocks = genBlock(currentTime);
+    std::vector<Event*> transactions = this->genTransaction(currentTime);
+    std::vector<Event*> blocks = this->genBlock(currentTime);
     std::vector<Event*> gets = genGetRequest(currentTime);
     events.insert(events.end(), transactions.begin(), transactions.end());
     events.insert(events.end(), blocks.begin(), blocks.end());
@@ -183,7 +188,6 @@ std::vector<Event*> Miner::genTransaction(time_t currentTime, bool malicious) {
     time_t scheduledTxnTime = currentTime + static_cast<time_t>(expDelay);
     processingTxnID = Counter::getTxnID();
     processingTxnTime = scheduledTxnTime;
-    
     // Create and return transaction broadcast event
     Transaction* transaction = new Transaction(processingTxnID, TransactionType::NORMAL, 
                                             id, receiver, transactionAmount);
@@ -203,10 +207,11 @@ std::vector<Event*> Miner::genGetRequest(time_t currentTime) {
     std::vector<Event*> events;
     for(auto [hash, timeout_time] : timeout) {
         if (timeout_time < currentTime) {
-            minerID_t neighbor = blockHashToMiners[hash].front();
+            auto [neighbor, malicious] = blockHashToMiners[hash].front();
+            blockHashToMiners[hash].push(blockHashToMiners[hash].front());
             blockHashToMiners[hash].pop();
             timeout[hash] = currentTime + TIMEOUT;
-            events.push_back(new GetEvent(EventType::SEND_GET, hash, currentTime, id, id, neighbor));
+            events.push_back(new GetEvent(EventType::SEND_GET, hash, currentTime, id, id, neighbor, false, malicious));
         }
     }
     return events;
@@ -341,10 +346,17 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious) {
             chainSwitched |= blockTree.switchToLongestChain(possibleAddedChild, memPool);
             std::vector<minerID_t> neighbors = getNeighbors();
             for (auto peer: neighbors){
+                if (peer == id) continue;
                 if(blkToMiner[possibleAddedChild.id].find(peer) == blkToMiner[possibleAddedChild.id].end()){
                     blkToMiner[possibleAddedChild.id].insert(peer);
                     newEvents.push_back(new HashEvent(EventType::SEND_HASH, possibleAddedChild.hash(), event.timestamp, id, id, peer, false, event.malicious));
-                    if(malicious && !event.malicious) {
+                }
+            }
+            if(malicious && !event.malicious) {
+                for (auto peer: maliciousNeighbors) {
+                    if (peer == id) continue;
+                    if(blkToMiner[possibleAddedChild.id].find(peer) == blkToMiner[possibleAddedChild.id].end()){
+                        blkToMiner[possibleAddedChild.id].insert(peer);
                         newEvents.push_back(new HashEvent(EventType::SEND_HASH, possibleAddedChild.hash(), event.timestamp, id, id, peer, true, true));
                     }
                 }
@@ -362,11 +374,18 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious) {
     std::vector<minerID_t> neighbors = getNeighbors();
 
     for (auto peer: neighbors){
+        if(peer == id) continue;
         if(blkToMiner[event.block.id].find(peer) == blkToMiner[event.block.id].end()){
             blkToMiner[event.block.id].insert(peer);
-            newEvents.push_back(new HashEvent(EventType::SEND_HASH, event.block.hash(), event.timestamp, event.owner, id, peer, false, event.malicious));
-            if(malicious && !event.malicious) {
-                newEvents.push_back(new HashEvent(EventType::SEND_HASH, event.block.hash(), event.timestamp, event.owner, id, peer, true, true));
+            newEvents.push_back(new HashEvent(EventType::SEND_HASH, event.block.hash(), event.timestamp, id, id, peer, false, event.malicious));
+        }
+    }
+    if(malicious && !event.malicious) {
+        for (auto peer: maliciousNeighbors){
+            if(peer == id) continue;
+            if(blkToMiner[event.block.id].find(peer) == blkToMiner[event.block.id].end()){
+                blkToMiner[event.block.id].insert(peer);
+                newEvents.push_back(new HashEvent(EventType::SEND_HASH, event.block.hash(), event.timestamp, id, id, peer, true, true));
             }
         }
     }
@@ -378,12 +397,13 @@ std::vector<Event*> Miner::receiveHash(HashEvent event) {
     if (gotBlock[event.hash]){
         return std::vector<Event*>();
     }
-    blockHashToMiners[event.hash].push(event.sender);
+    blockHashToMiners[event.hash].push(std::make_pair(event.sender, event.malicious));
     if(timeout[event.hash] < event.timestamp){
-        minerID_t neighbor = blockHashToMiners[event.hash].front();
+        auto [neighbor, malicious] = blockHashToMiners[event.hash].front();
+        blockHashToMiners[event.hash].push(blockHashToMiners[event.hash].front());
         blockHashToMiners[event.hash].pop();
         timeout[event.hash] = event.timestamp + TIMEOUT;
-        return {new GetEvent(EventType::SEND_GET, event.hash, event.timestamp, id, id, neighbor, false, event.malicious)};
+        return {new GetEvent(EventType::SEND_GET, event.hash, event.timestamp, id, id, neighbor, false, malicious)};
     }
     return std::vector<Event*>();
 }
@@ -436,6 +456,7 @@ void Miner::printMiner(){
 
 // Destructor: exports block tree to DOT format for visualization
 Miner::~Miner(){
+    this->printSummary(false, false);
     blockTree.exportToDot("blockTree-" + std::to_string(id) + ".dot");
 }
 
@@ -469,6 +490,7 @@ std::vector<Event*> MaliciousMiner::receiveBroadcastPrivateChain(BroadcastPrivat
     if(receivedBroadcastPrivateChain.find(event.block_id) == receivedBroadcastPrivateChain.end()){
         receivedBroadcastPrivateChain[event.block_id] = true;
         for(auto peer: maliciousNeighbors) {
+            if (peer == id) continue;
             newEvents.push_back(new BroadcastPrivateChainEvent(EventType::BROADCAST_PRIVATE_CHAIN, event.block_id, event.timestamp, event.owner, id, peer, true, true));
         }
         std::vector<hash_t> hashes;
@@ -478,7 +500,8 @@ std::vector<Event*> MaliciousMiner::receiveBroadcastPrivateChain(BroadcastPrivat
             block = blockTree.getNextBlock(block.id);
         }
         for(auto hash: hashes) {
-            for(auto peer: neighbors) {
+            for(auto peer: maliciousNeighbors) {
+                if (peer == id) continue;
                 newEvents.push_back(new HashEvent(EventType::SEND_HASH, hash, event.timestamp, event.owner, id, peer, true, true));
             }
         }
@@ -538,7 +561,7 @@ std::vector<Event*> RingMaster::genBlock(time_t currentTime){ //TODO: Implement
         return std::vector<Event*>();
     }
 
-    BlockTree currentBlockTree = privateBlockTree;
+    BlockTree& currentBlockTree = privateBlockTree;
     if(branchBlock.id < 0){
         currentBlockTree = blockTree;
     }

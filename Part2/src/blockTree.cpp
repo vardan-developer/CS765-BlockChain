@@ -236,7 +236,6 @@ int BlockTree::addBlock(Block & block, time_t arrivalTime) {
         this->cachedChildren.insert(std::make_pair(block, arrivalTime));
         return -1;
     }
-    // std::cout << "Miner " << id << " trying to add block " << block.id << '\n';
     BlockTreeNode * node = new BlockTreeNode(block);
     node->parent = parent;
     node->height = parent->height + 1;
@@ -247,7 +246,6 @@ int BlockTree::addBlock(Block & block, time_t arrivalTime) {
         node->arrivalTime = arrivalTime;
         return std::max(node->height, this->current->height);
     } else {
-        // std::cout << "Block " << node->block.id << " Rejected by Miner " << this->id << '\n';
         delete node;
         return -1;
     }
@@ -353,7 +351,6 @@ void BlockTree::printSubTree(BlockTreeNode* node, std::ofstream & file) const {
 // Helper function to print a chain given it's latest node
 void BlockTree::printChain(BlockTreeNode* node) const {
     while (node) {
-        std::cout << node->block.id << '\n';
         node = node->parent;
     }
 }

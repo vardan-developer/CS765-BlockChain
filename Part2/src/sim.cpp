@@ -1,8 +1,10 @@
 #include "sim.hpp"
 #include <cerrno>
+#include <climits>
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <ostream>
 #include <vector>
 #include "block.hpp"
 #include "def.hpp"
@@ -133,14 +135,15 @@ Simulator::Simulator(ProgramSettings & settings):
     maliciousNetwork = new Network(totalMiners, maliciousFraction, true);
     Block genesisBlock = createGenesisBlock();
     miners.reserve(totalMiners);
-    Miner* ringMaster = new RingMaster(0, totalMiners, txnInterval, blkInterval/totalMiners, genesisBlock, honestNetwork->getNeighbors(0), maliciousNetwork->getNeighbors(0), settings.eclipse);
+    Miner* ringMaster = new RingMaster(0, totalMiners, txnInterval, blkInterval * totalMiners / (totalMiners * maliciousFraction), genesisBlock, honestNetwork->getNeighbors(0), maliciousNetwork->getNeighbors(0), settings.eclipse);
     miners.push_back(ringMaster);
     for(int i = 1; i < totalMiners * maliciousFraction; i++) {
-        Miner * new_miner = new MaliciousMiner(i, totalMiners, txnInterval, blkInterval/totalMiners, genesisBlock, honestNetwork->getNeighbors(i), maliciousNetwork->getNeighbors(i), settings.eclipse);
+        Miner * new_miner = new MaliciousMiner(i, totalMiners, txnInterval, INT_MAX, genesisBlock, honestNetwork->getNeighbors(i), maliciousNetwork->getNeighbors(i), settings.eclipse);
         miners.push_back(new_miner);
     }
     for(int i = totalMiners * maliciousFraction; i < totalMiners; i++) {
-        Miner * new_miner = new Miner(i, totalMiners, txnInterval, blkInterval/totalMiners, genesisBlock, honestNetwork->getNeighbors(i));
+        Miner * new_miner = new Miner(i, totalMiners, txnInterval, blkInterval * totalMiners, genesisBlock, honestNetwork->getNeighbors(i));
+        miners.push_back(new_miner);
     }
 }
 
@@ -334,7 +337,7 @@ void Simulator::processBlockCreation(HashEvent* event) {
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
             latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);
-            HashEvent* newEvent = new HashEvent(EventType::SEND_HASH, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
+            HashEvent* newEvent = new HashEvent(EventType::SEND_HASH, event->hash,  event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
             this->events.push((Event*) newEvent);
         }
     }
@@ -377,7 +380,7 @@ void Simulator::processEvent(Event * event) {
             processBroadcastPrivateChain((BroadcastPrivateChainEvent*) event);
             break;
         case EventType::BLOCK_CREATION:
-        processBlockCreation((HashEvent*) event);
+            processBlockCreation((HashEvent*) event);
             break;
         default:
             std::cerr << "UNKNOWN EVENT ENCOUNTERED" << std::endl;

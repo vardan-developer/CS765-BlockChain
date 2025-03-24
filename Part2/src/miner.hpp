@@ -5,7 +5,6 @@
 #include "blockTree.hpp"
 #include "transaction.hpp"
 #include "event.hpp"
-#include <functional>   
 #include <vector>
 /**
  * @brief Class representing a miner in the blockchain network
@@ -25,7 +24,7 @@ protected:
     std::map<blockID_t, std::set<minerID_t>> blkToMiner; 
     std::map<hash_t, bool> gotBlock;            // Whether a block has been received for a given hash
     std::map<hash_t, blockID_t> blockHashToID;  // Map from block hash to block ID
-    std::map<hash_t, std::queue<minerID_t>> blockHashToMiners; // Map from block hash to miners who sent the hash to me
+    std::map<hash_t, std::queue<std::pair<minerID_t, bool>>> blockHashToMiners; // Map from block hash to miners who sent the hash to me
 
     int totalMiners;              // Total number of miners in the network
     int txnInterval;              // Time interval between transaction generations
@@ -34,6 +33,7 @@ protected:
     time_t processingBlockTime;   // Timestamp of last block processing
     int totalBlocksGenerated;     // Counter for total blocks created by this miner
     std::vector<minerID_t> neighbors; // Neighbors of this miner
+    std::vector<minerID_t> maliciousNeighbors;
     std::map<hash_t, time_t> timeout;                 // Timeout for sending next get request
     
 public:
@@ -52,11 +52,11 @@ public:
     virtual std::vector<Event*> receiveBlock(BlockEvent event, bool malicious = false);
     std::vector<Event*> receiveHash(HashEvent event);
     virtual std::vector<Event*> receiveGet(GetEvent event);
-    inline hash_t genHash(Block block);
+    hash_t genHash(Block block);
     std::vector<Event*> genGetRequest(time_t currentTime);
     std::vector<minerID_t> getNeighbors() ;
     virtual bool confirmBlock(HashEvent event);
-    inline int getID() const;
+    int getID() const;
     virtual void printMiner();
     virtual void printSummary(bool fast, bool high);
     float getRatio();
@@ -66,7 +66,6 @@ public:
 class MaliciousMiner: public Miner {
 protected:
     bool eclipse;
-    std::vector<minerID_t> maliciousNeighbors;
     std::map<blockID_t, bool> receivedBroadcastPrivateChain;
 public:
     MaliciousMiner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors, std::vector<minerID_t> malicious_neighbors, bool eclipse = false);

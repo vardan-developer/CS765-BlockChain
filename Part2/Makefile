@@ -5,14 +5,14 @@ CXX = g++
 CXXFLAGS = -std=c++23
 DEBUG = 0
 WARNINGS = 0
-TOTAL_NODES = 100
-SLOW = 0.6
-LOW_CPU = 0.4
+TOTAL_NODES = 10
 TTX_TIME = 5000
 BLK_TIME = 600000
 BLK_LIMIT = 200
 TIME_LIMIT = 10000000
-# If DEBUG=1 is passed in the command line, add the -g flag for debugging
+TIMEOUT = 100
+ECLIPSE = 1
+MALICIOUS = 0.4
 ifeq ($(DEBUG),1)
     CXXFLAGS += -g
 endif
@@ -44,9 +44,11 @@ run: all
 	rm -rf logs graphs
 	mkdir -p logs
 	mkdir -p graphs
-	./sim  --total-nodes $(TOTAL_NODES) --z0 $(SLOW) --z1 $(LOW_CPU) --ttx-time $(TTX_TIME) --blk-time $(BLK_TIME) --blk-limit $(BLK_LIMIT) > miners.txt
-	dot -Tpng peerGraph.dot -o graphs/peerGraph.png 1> /dev/null 2> /dev/null
-	rm peerGraph.dot
+	./sim --total-nodes $(TOTAL_NODES) --ttx-time $(TTX_TIME) --blk-time $(BLK_TIME) --blk-limit $(BLK_LIMIT) --time-limit $(TIME_LIMIT) --timeout $(TIMEOUT)  --eclipse $(ECLIPSE) --malicious $(MALICIOUS)
+	dot -Tpng honestGraph.dot -o graphs/honestGraph.png 1> /dev/null 2> /dev/null
+	dot -Tpng maliciousGraph.dot -o graphs/maliciousGraph.png 1> /dev/null 2> /dev/null
+	rm honestGraph.dot
+	rm maliciousGraph.dot
 	for file in blockTree-*.dot; do \
 		dot -Tpng $$file -o graphs/$${file%.dot}.png 1> /dev/null  2>/dev/null; \
 		rm $$file; \
