@@ -99,7 +99,7 @@ class RingMaster: public MaliciousMiner {
         std::vector<Event*> genBlock(time_t currentTime);
         std::vector<Event*> receiveGet(GetEvent event);
         bool confirmBlock(HashEvent event);
-        std::vector<Event*> checkAndBroadcastPrivate(time_t currentTime);
+        std::vector<Event*> checkAndBroadcastPrivate(time_t currentTime, bool do_anyways = false);
 };
 
 #endif

@@ -39,7 +39,7 @@ Block BlockTree::getNextBlock(blockID_t blockID) {
 }
 
 Block BlockTree::getBlock(blockID_t blockID) {
-    if (blockToNode.find(blockID) != blockToNode.end()) { // TODO: Check this condition
+    if (blockToNode.find(blockID) != blockToNode.end() && blockToNode[blockID] != nullptr) { // TODO: Check this condition
         return blockToNode[blockID]->block;
     }
     return Block();

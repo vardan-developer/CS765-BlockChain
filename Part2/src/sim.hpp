@@ -8,6 +8,8 @@
 #include "parser.hpp"
 #include <ctime>
 
+std::string eventTypeToString(EventType type);
+
 struct EventComparator {
     bool operator()(Event* a, Event* b) const {
         return *a > *b; // Uses Event's `operator>`
@@ -23,6 +25,7 @@ private:
     double Tt;
     time_t timeLimit;
     long long blkCount;
+    bool show;
     time_t currentTime;
     Network *honestNetwork, *maliciousNetwork;
     std::vector<Miner *> miners;

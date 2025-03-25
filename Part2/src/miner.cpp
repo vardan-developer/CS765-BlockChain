@@ -213,9 +213,9 @@ std::vector<Event*> Miner::genGetRequest(time_t currentTime) {
             blockHashToMiners[hash].pop();
             timeout[hash] = currentTime + TIMEOUT;
             events.push_back(new GetEvent(EventType::SEND_GET, hash, currentTime, id, id, neighbor, false, malicious));
-            if(!id) {std::cout << "miner " << id << " sent get request to " << neighbor << " for hash " << hash << std::endl;
-            std::cout << "neighbor: " << neighbor << " malicious: " << malicious << std::endl;
-            }
+            // if(!id) {std::cout << "miner " << id << " sent get request to " << neighbor << " for hash " << hash << std::endl;
+            // std::cout << "neighbor: " << neighbor << " malicious: " << malicious << std::endl;
+            // }
         }
     }
     return events;
@@ -326,24 +326,24 @@ std::vector<Event*> Miner::receiveTransactions(TransactionEvent event, bool mali
 std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious) {
     if ( ! this->blkToMiner[event.block.id].empty() ) {
         auto block = blockTree.getBlock(event.block.id);
-        std::cout << "Block " << event.block.id << " " << block.id << " already exists" << std::endl;
+        // std::cout << "Block " << event.block.id << " " << block.id << " already exists" << std::endl;
         return std::vector<Event*> ();
     }
     hash_t hash_blk = event.block.hash();
-    if(!id) std::cout << "miner " << id << " received block " << event.block.id << " from " << event.sender << std::endl;
+    // if(!id) std::cout << "miner " << id << " received block " << event.block.id << " from " << event.sender << std::endl;
     if(blockHashToMiners.find(hash_blk) == blockHashToMiners.end()){
-        std::cout << "LMFAO BITCH" << std::endl;
-        return std::vector<Event*>();
-    }
-    if(blockTree.addBlock(event.block, event.timestamp) < 0){
-        std::cout << "JHAT KA BAL" << std::endl;
+        // std::cout << "LMFAO BITCH" << std::endl;
         return std::vector<Event*>();
     }
     gotBlock[hash_blk] = true;
-    timeout.erase(hash_blk);
     blockHashToMiners.erase(hash_blk);
+    timeout.erase(hash_blk);
     blockHashToID[hash_blk] = event.block.id;
-    std::cout << "Block " << event.block.id << " accepted by miner " << id << std::endl;
+    if(blockTree.addBlock(event.block, event.timestamp) < 0){
+        // std::cout << "JHAT KA BAL" << std::endl;
+        return std::vector<Event*>();
+    }
+    // std::cout << "Block " << event.block.id << " accepted by miner " << id << std::endl;
 
     std::vector<Event*> newEvents;
 
@@ -405,10 +405,10 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious) {
 }
 
 std::vector<Event*> Miner::receiveHash(HashEvent event) {
-    if (gotBlock.find(event.hash) != gotBlock.end()){
+    if (gotBlock.find(event.hash) != gotBlock.end() && gotBlock[event.hash]){
         return std::vector<Event*>();
     }
-    if(!id) std::cout << "miner " << id << " received hash " << event.hash << " from " << event.sender << std::endl;
+    // if(!id) std::cout << "miner " << id << " received hash " << event.hash << " from " << event.sender << std::endl;
     blockHashToMiners[event.hash].push(std::make_pair(event.sender, event.malicious));
     if(timeout[event.hash] < event.timestamp){
         auto [neighbor, malicious] = blockHashToMiners[event.hash].front();
@@ -421,11 +421,11 @@ std::vector<Event*> Miner::receiveHash(HashEvent event) {
 }
 
 std::vector<Event*> Miner::receiveGet(GetEvent event) {
-    if (gotBlock.find(event.hash) == gotBlock.end()){
+    if (gotBlock.find(event.hash) == gotBlock.end() || !gotBlock[event.hash]){
         return std::vector<Event*>();
     }
     // if(event.sender == 0) {
-        std::cout << "miner " << id << " received get request for hash " << event.hash << " from " << event.sender << std::endl;
+        // std::cout << "miner " << id << " received get request for hash " << event.hash << " from " << event.sender << std::endl;
     // }
     // std::cout << "Received get from " << event.sender << std::endl;
     blockID_t blockID = blockHashToID[event.hash];
@@ -488,6 +488,8 @@ float Miner::getAvgBranchLength() {
 
 std::vector<Event*> MaliciousMiner::receiveBlock(BlockEvent event, bool malicious) {
     // std::cout << "Received block from " << event.sender << std::endl;
+    // if(event.malicious && event.owner ==0)std::cout <<"Miner " << id << " Received block from " << event.owner << " on private network"
+            //  << std::endl;
     return Miner::receiveBlock(event, true);
 }
 
@@ -550,26 +552,37 @@ bool RingMaster::confirmBlock(HashEvent event) {
     }
     this->totalBlocksGenerated++;
     privateBlockTree.addBlock(processingBlock, event.timestamp);
+    privateBlockTree.switchToLongestChain(processingBlock, memPool);
     processingBlock = Block();
     return true;
 }
 
-std::vector<Event*> RingMaster::checkAndBroadcastPrivate(time_t currentTime) {
-        
+std::vector<Event*> RingMaster::checkAndBroadcastPrivate(time_t currentTime, bool do_anyways) {
+    if (branchBlock.id < 0) {
+        return std::vector<Event*> ();
+    }
     int honestLength = blockTree.getCurrent().height - branchBlock.height;
     int privateLength = privateBlockTree.getCurrent().height - branchBlock.height;
-
-    if (honestLength == privateLength || honestLength == privateLength - 1) {
+    bool panic = honestLength == privateLength || honestLength == privateLength - 1;
+    if (privateLength > 0 && (panic || do_anyways)) {
         Block privateBlock = privateBlockTree.getNextBlock(branchBlock.id);
+        std::vector<Event*> newEvents = { new BroadcastPrivateChainEvent(EventType::BROADCAST_PRIVATE_CHAIN, privateBlockTree.getNextBlock(branchBlock.id).id, currentTime, id, id, -1, true, true) };
         while(privateBlock.id >= 0) {
+            newEvents.push_back(new HashEvent(EventType::SEND_HASH, privateBlock.hash(), currentTime, id, id, -1, true, false));
+            receivedBroadcastPrivateChain[privateBlock.id] = true;
             blockTree.addBlock(privateBlock, currentTime);
+            blockTree.switchToLongestChain(privateBlock, memPool);
             privateBlock = privateBlockTree.getNextBlock(privateBlock.id);
         }
         branchBlock = Block();
         privateBlockTree = BlockTree();
-        return std::vector<Event*> { new BroadcastPrivateChainEvent(EventType::BROADCAST_PRIVATE_CHAIN, privateBlockTree.getNextBlock(branchBlock.id).id, currentTime, id, id, -1, true, true) };
+        return newEvents;
     }
-
+    else if (honestLength > privateLength) {
+        branchBlock = Block();
+        privateBlockTree = BlockTree();
+        return std::vector<Event*> ();
+    }
     return std::vector<Event*> ();
 
 }
@@ -607,7 +620,7 @@ std::vector<Event*> RingMaster::genBlock(time_t currentTime){ //TODO: Implement
     blockID_t blockID = Counter::getBlockID();
     time_t scheduledBlkTime = currentTime + static_cast<time_t>(expDelay);
 
-    // Select transactions from mempool
+    // Select transactions from mempool 
     std::vector<Transaction> transactions(memPool.begin(), memPool.end());
     int totalTxn = transactions.size();
     std::vector<Transaction> selectedTxn;
