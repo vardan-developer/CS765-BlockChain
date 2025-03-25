@@ -30,6 +30,7 @@ private:
     std::set<blockID_t> blockSet;
     Block createGenesisBlock();
     void generateGraphViz(const std::string& honestNetworkFile = "honestGraph.dot", const std::string& maliciousNetworkFile = "maliciousGraph.dot");
+    int eventsProcessed;
     
 public:
     // Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit = 10 * 60 * 1000, long long blkCount = 100);

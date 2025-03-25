@@ -147,7 +147,7 @@ std::vector<Event*> Miner::getEvents(time_t currentTime) {
     std::vector<Event*> events;
     std::vector<Event*> transactions = this->genTransaction(currentTime);
     std::vector<Event*> blocks = this->genBlock(currentTime);
-    std::vector<Event*> gets = genGetRequest(currentTime);
+    std::vector<Event*> gets = this->genGetRequest(currentTime);
     events.insert(events.end(), transactions.begin(), transactions.end());
     events.insert(events.end(), blocks.begin(), blocks.end());
     events.insert(events.end(), gets.begin(), gets.end());
@@ -189,11 +189,11 @@ std::vector<Event*> Miner::genTransaction(time_t currentTime, bool malicious) {
     processingTxnID = Counter::getTxnID();
     processingTxnTime = scheduledTxnTime;
     // Create and return transaction broadcast event
-    Transaction* transaction = new Transaction(processingTxnID, TransactionType::NORMAL, 
+    Transaction transaction = Transaction(processingTxnID, TransactionType::NORMAL, 
                                             id, receiver, transactionAmount);
-    std::vector<Event*> tmpEvent{new TransactionEvent(EventType::SEND_TRANSACTION, *transaction, 
+    std::vector<Event*> tmpEvent{new TransactionEvent(EventType::SEND_TRANSACTION, transaction, 
                  scheduledTxnTime, id, id, minerID_t(-1), true)};
-    if(malicious) tmpEvent.push_back(new TransactionEvent(EventType::SEND_TRANSACTION, *transaction, 
+    if(malicious) tmpEvent.push_back(new TransactionEvent(EventType::SEND_TRANSACTION, transaction, 
                  scheduledTxnTime, id, id, minerID_t(-1), true, true));
     return tmpEvent;
 }
@@ -249,15 +249,15 @@ std::vector<Event*> Miner::genBlock(time_t currentTime) {
                         id, id, COINBASE_REWARD);
     
     // Create new block with coinbase transaction
-    Block* block = new Block(blockID, height, parentID, scheduledBlkTime, id);
-    block->transactions.push_back(coinbase);
+    Block block = Block(blockID, height, parentID, scheduledBlkTime, id);
+    block.transactions.push_back(coinbase);
 
     // Add valid transactions from mempool
     if (totalTxn > 0) {
         int txnCount = getUniformRandom(0, std::min(Kb-1, totalTxn));
         selectedTxn = std::vector<Transaction>(txnCount);
         std::map<minerID_t, int> txnCountMap;
-        for(int i = 0; i < transactions.size() && block->transactions.size() < totalTxn; i++){
+        for(int i = 0; i < transactions.size() && block.transactions.size() < totalTxn; i++){
             if (txnCountMap.find(transactions[i].sender) == txnCountMap.end()){
                 txnCountMap[transactions[i].sender] = 0;
             }
@@ -266,18 +266,18 @@ std::vector<Event*> Miner::genBlock(time_t currentTime) {
                 continue;
             }
             txnCountMap[transactions[i].sender] += value;
-            block->transactions.push_back(transactions[i]);
+            block.transactions.push_back(transactions[i]);
             memPool.erase(transactions[i]);
         }
-        if (!blockTree.validateBlock(*block)){
-            while(block->transactions.size() > 1){
-                memPool.insert(block->transactions.back());
-                block->transactions.pop_back();
+        if (!blockTree.validateBlock(block)){
+            while(block.transactions.size() > 1){
+                memPool.insert(block.transactions.back());
+                block.transactions.pop_back();
             }
         }
     }
-    processingBlock = *block;
-    hash_t hash_blk = genHash(*block);
+    processingBlock = block;
+    hash_t hash_blk = genHash(block);
     gotBlock[hash_blk] = true;
     blockHashToID[hash_blk] = blockID;
     return {new HashEvent(EventType::BLOCK_CREATION, hash_blk, scheduledBlkTime, id, id, minerID_t(-1), true)};
@@ -300,6 +300,7 @@ std::vector<Event*> Miner::receiveTransactions(TransactionEvent event, bool mali
     txnToMiner[event.transaction.id].insert(event.owner);
 
     // Create events to propagate transaction to neighbors
+    // TODO: BroadCast voer malicious network too
     std::vector<Event*> newEvents;
     for (auto peer: neighbors) {
         if(txnToMiner[event.transaction.id].find(peer) == 
@@ -355,13 +356,6 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious) {
         if ( possibleAddedChild.id >= 0 ) {
             chainSwitched |= blockTree.switchToLongestChain(possibleAddedChild, memPool);
             std::vector<minerID_t> neighbors = getNeighbors();
-            for (auto peer: neighbors){
-                if (peer == id) continue;
-                if(blkToMiner[possibleAddedChild.id].find(peer) == blkToMiner[possibleAddedChild.id].end()){
-                    blkToMiner[possibleAddedChild.id].insert(peer);
-                    newEvents.push_back(new HashEvent(EventType::SEND_HASH, possibleAddedChild.hash(), event.timestamp, id, id, peer, false, false));
-                }
-            }
             if(malicious && !event.malicious) {
                 for (auto peer: maliciousNeighbors) {
                     if (peer == id) continue;
@@ -369,6 +363,13 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious) {
                         blkToMiner[possibleAddedChild.id].insert(peer);
                         newEvents.push_back(new HashEvent(EventType::SEND_HASH, possibleAddedChild.hash(), event.timestamp, id, id, peer, false, true));
                     }
+                }
+            }
+            for (auto peer: neighbors){
+                if (peer == id) continue;
+                if(blkToMiner[possibleAddedChild.id].find(peer) == blkToMiner[possibleAddedChild.id].end()){
+                    blkToMiner[possibleAddedChild.id].insert(peer);
+                    newEvents.push_back(new HashEvent(EventType::SEND_HASH, possibleAddedChild.hash(), event.timestamp, id, id, peer, false, false));
                 }
             }
         }
@@ -383,13 +384,6 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious) {
     blkToMiner[event.block.id].insert(event.owner);
     std::vector<minerID_t> neighbors = getNeighbors();
 
-    for (auto peer: neighbors){
-        if(peer == id) continue;
-        if(blkToMiner[event.block.id].find(peer) == blkToMiner[event.block.id].end()){
-            blkToMiner[event.block.id].insert(peer);
-            newEvents.push_back(new HashEvent(EventType::SEND_HASH, event.block.hash(), event.timestamp, id, id, peer, false, false));
-        }
-    }
     if(malicious && !event.malicious) {
         for (auto peer: maliciousNeighbors){
             if(peer == id) continue;
@@ -397,6 +391,13 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious) {
                 blkToMiner[event.block.id].insert(peer);
                 newEvents.push_back(new HashEvent(EventType::SEND_HASH, event.block.hash(), event.timestamp, id, id, peer, false, true));
             }
+        }
+    }
+    for (auto peer: neighbors){
+        if(peer == id) continue;
+        if(blkToMiner[event.block.id].find(peer) == blkToMiner[event.block.id].end()){
+            blkToMiner[event.block.id].insert(peer);
+            newEvents.push_back(new HashEvent(EventType::SEND_HASH, event.block.hash(), event.timestamp, id, id, peer, false, false));
         }
     }
 
@@ -423,9 +424,9 @@ std::vector<Event*> Miner::receiveGet(GetEvent event) {
     if (gotBlock.find(event.hash) == gotBlock.end()){
         return std::vector<Event*>();
     }
-    if(event.sender == 0) {
+    // if(event.sender == 0) {
         std::cout << "miner " << id << " received get request for hash " << event.hash << " from " << event.sender << std::endl;
-    }
+    // }
     // std::cout << "Received get from " << event.sender << std::endl;
     blockID_t blockID = blockHashToID[event.hash];
     Block block = blockTree.getBlock(blockID);
@@ -564,9 +565,9 @@ std::vector<Event*> RingMaster::checkAndBroadcastPrivate(time_t currentTime) {
             blockTree.addBlock(privateBlock, currentTime);
             privateBlock = privateBlockTree.getNextBlock(privateBlock.id);
         }
-        return std::vector<Event*> { new BroadcastPrivateChainEvent(EventType::BROADCAST_PRIVATE_CHAIN, privateBlockTree.getNextBlock(branchBlock.id).id, currentTime, id, id, -1, true, true) };
         branchBlock = Block();
         privateBlockTree = BlockTree();
+        return std::vector<Event*> { new BroadcastPrivateChainEvent(EventType::BROADCAST_PRIVATE_CHAIN, privateBlockTree.getNextBlock(branchBlock.id).id, currentTime, id, id, -1, true, true) };
     }
 
     return std::vector<Event*> ();
@@ -616,15 +617,15 @@ std::vector<Event*> RingMaster::genBlock(time_t currentTime){ //TODO: Implement
                         id, id, COINBASE_REWARD);
     
     // Create new block with coinbase transaction
-    Block* block = new Block(blockID, height, parentID, scheduledBlkTime, id);
-    block->transactions.push_back(coinbase);
+    Block block = Block(blockID, height, parentID, scheduledBlkTime, id);
+    block.transactions.push_back(coinbase);
 
     // Add valid transactions from mempool
     if (totalTxn > 0) {
         int txnCount = getUniformRandom(0, std::min(Kb-1, totalTxn));
         selectedTxn = std::vector<Transaction>(txnCount);
         std::map<minerID_t, int> txnCountMap;
-        for(int i = 0; i < transactions.size() && block->transactions.size() < totalTxn; i++){
+        for(int i = 0; i < transactions.size() && block.transactions.size() < totalTxn; i++){
             if (txnCountMap.find(transactions[i].sender) == txnCountMap.end()){
                 txnCountMap[transactions[i].sender] = 0;
             }
@@ -633,24 +634,24 @@ std::vector<Event*> RingMaster::genBlock(time_t currentTime){ //TODO: Implement
                 continue;
             }
             txnCountMap[transactions[i].sender] += value;
-            block->transactions.push_back(transactions[i]);
+            block.transactions.push_back(transactions[i]);
             memPool.erase(transactions[i]);
         }
-        if (!currentBlockTree.validateBlock(*block)){
-            while(block->transactions.size() > 1){
-                memPool.insert(block->transactions.back());
-                block->transactions.pop_back();
+        if (!currentBlockTree.validateBlock(block)){
+            while(block.transactions.size() > 1){
+                memPool.insert(block.transactions.back());
+                block.transactions.pop_back();
             }
         }
     }
-    hash_t hash_blk = genHash(*block);
+    hash_t hash_blk = genHash(block);
     blockHashToID[hash_blk] = blockID;
     gotBlock[hash_blk] = true;
     if (branchBlock.id < 0){
         branchBlock = parent;
         privateBlockTree = BlockTree(id, branchBlock, currentBlockTree.getBalanceMap());
     }
-    processingBlock  = *block;
+    processingBlock  = block;
     return {new HashEvent(EventType::BLOCK_CREATION, hash_blk, scheduledBlkTime, id, id, minerID_t(-1), true, true)};
 
 
