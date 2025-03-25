@@ -8,6 +8,11 @@
 #include "parser.hpp"
 #include <ctime>
 
+struct EventComparator {
+    bool operator()(Event* a, Event* b) const {
+        return *a > *b; // Uses Event's `operator>`
+    }
+};
 
 class Simulator{
 private:
@@ -21,7 +26,7 @@ private:
     time_t currentTime;
     Network *honestNetwork, *maliciousNetwork;
     std::vector<Miner *> miners;
-    std::priority_queue<Event*, std::vector<Event*>, std::greater<Event*>> events;
+    std::priority_queue<Event*, std::vector<Event*>, EventComparator> events;
     std::set<blockID_t> blockSet;
     Block createGenesisBlock();
     void generateGraphViz(const std::string& honestNetworkFile = "honestGraph.dot", const std::string& maliciousNetworkFile = "maliciousGraph.dot");
