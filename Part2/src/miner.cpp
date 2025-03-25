@@ -204,6 +204,7 @@ hash_t Miner::genHash(Block block) {
 }
 
 std::vector<Event*> Miner::genGetRequest(time_t currentTime) {
+    
     std::vector<Event*> events;
     for(auto [hash, timeout_time] : timeout) {
         if (timeout_time < currentTime) {
@@ -212,6 +213,9 @@ std::vector<Event*> Miner::genGetRequest(time_t currentTime) {
             blockHashToMiners[hash].pop();
             timeout[hash] = currentTime + TIMEOUT;
             events.push_back(new GetEvent(EventType::SEND_GET, hash, currentTime, id, id, neighbor, false, malicious));
+            if(!id) {std::cout << "miner " << id << " sent get request to " << neighbor << " for hash " << hash << std::endl;
+            std::cout << "neighbor: " << neighbor << " malicious: " << malicious << std::endl;
+            }
         }
     }
     return events;
@@ -320,20 +324,25 @@ std::vector<Event*> Miner::receiveTransactions(TransactionEvent event, bool mali
 // Returns events for block propagation
 std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious) {
     if ( ! this->blkToMiner[event.block.id].empty() ) {
+        auto block = blockTree.getBlock(event.block.id);
+        std::cout << "Block " << event.block.id << " " << block.id << " already exists" << std::endl;
         return std::vector<Event*> ();
     }
     hash_t hash_blk = event.block.hash();
-
+    if(!id) std::cout << "miner " << id << " received block " << event.block.id << " from " << event.sender << std::endl;
     if(blockHashToMiners.find(hash_blk) == blockHashToMiners.end()){
+        std::cout << "LMFAO BITCH" << std::endl;
         return std::vector<Event*>();
     }
     if(blockTree.addBlock(event.block, event.timestamp) < 0){
+        std::cout << "JHAT KA BAL" << std::endl;
         return std::vector<Event*>();
     }
     gotBlock[hash_blk] = true;
     timeout.erase(hash_blk);
     blockHashToMiners.erase(hash_blk);
     blockHashToID[hash_blk] = event.block.id;
+    std::cout << "Block " << event.block.id << " accepted by miner " << id << std::endl;
 
     std::vector<Event*> newEvents;
 
@@ -398,6 +407,7 @@ std::vector<Event*> Miner::receiveHash(HashEvent event) {
     if (gotBlock.find(event.hash) != gotBlock.end()){
         return std::vector<Event*>();
     }
+    if(!id) std::cout << "miner " << id << " received hash " << event.hash << " from " << event.sender << std::endl;
     blockHashToMiners[event.hash].push(std::make_pair(event.sender, event.malicious));
     if(timeout[event.hash] < event.timestamp){
         auto [neighbor, malicious] = blockHashToMiners[event.hash].front();
@@ -412,6 +422,9 @@ std::vector<Event*> Miner::receiveHash(HashEvent event) {
 std::vector<Event*> Miner::receiveGet(GetEvent event) {
     if (gotBlock.find(event.hash) == gotBlock.end()){
         return std::vector<Event*>();
+    }
+    if(event.sender == 0) {
+        std::cout << "miner " << id << " received get request for hash " << event.hash << " from " << event.sender << std::endl;
     }
     // std::cout << "Received get from " << event.sender << std::endl;
     blockID_t blockID = blockHashToID[event.hash];

@@ -187,6 +187,12 @@ void Simulator::run() {
         if(this->blockSet.size() > this->blkCount) break;
         // std::cout << "Block count: " << this->blockSet.size() << std::endl;
     } while( this->blkCount );
+    auto all_events = events;
+    while(!all_events.empty()) {
+        Event * event = all_events.top();
+        all_events.pop();
+        processEvent(event);
+    }
 }
 
 // Collects pending events from all miners and adds them to the event queue
@@ -239,7 +245,7 @@ void Simulator::processSendHashEvent(HashEvent * event) {
             this->events.push((Event*) newEvent);
         }
     } else {
-        std::cout << "sender: " << event->sender << " receiver: " << event->receiver << " malicious: " << event->malicious << std::endl;
+        // std::cout << "sender: " << event->sender << " receiver: " << event->receiver << " malicious: " << event->malicious << std::endl;
         latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver) : honestNetwork->getLatency(event->sender, event->receiver);
         time_t latency;
         HashEvent* newEvent = new HashEvent(EventType::RECEIVE_HASH, event->hash, event->timestamp + latency, event->owner, event->sender, event->receiver, event->broadcast, event->malicious);

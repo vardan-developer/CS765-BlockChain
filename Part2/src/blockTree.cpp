@@ -374,6 +374,7 @@ void BlockTree::exportToDot(const std::string & filename) const {
         file << "    \"" << node->block.id << "\" [label=\"Block " << node->block.id 
              << "\\nHeight: " << node->height 
              << "\\nMiner ID: " << node->block.owner
+             << "\\nBlock Hash: " << node->block.hash()
              << "\\nBlock Creation Time: " << node->block.timestamp
              << "\\nTimestamp: " << node->arrivalTime << "\"];\n";
 
