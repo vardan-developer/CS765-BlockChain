@@ -39,7 +39,10 @@ Block BlockTree::getNextBlock(blockID_t blockID) {
 }
 
 Block BlockTree::getBlock(blockID_t blockID) {
-    return blockToNode[blockID]->block;
+    if (blockToNode.contains(blockID)) {
+        return blockToNode[blockID]->block;
+    }
+    return Block();
 }
 
 // Default constructor for BlockTree

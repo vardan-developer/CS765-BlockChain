@@ -184,7 +184,8 @@ void Simulator::run() {
         events.pop();
         processEvent(event);
         if ( this->currentTime > this->timeLimit) break;
-        
+        if(this->blockSet.size() > this->blkCount) break;
+        // std::cout << "Block count: " << this->blockSet.size() << std::endl;
     } while( this->blkCount );
 }
 
@@ -238,6 +239,7 @@ void Simulator::processSendHashEvent(HashEvent * event) {
             this->events.push((Event*) newEvent);
         }
     } else {
+        std::cout << "sender: " << event->sender << " receiver: " << event->receiver << " malicious: " << event->malicious << std::endl;
         latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver) : honestNetwork->getLatency(event->sender, event->receiver);
         time_t latency;
         HashEvent* newEvent = new HashEvent(EventType::RECEIVE_HASH, event->hash, event->timestamp + latency, event->owner, event->sender, event->receiver, event->broadcast, event->malicious);
@@ -247,6 +249,7 @@ void Simulator::processSendHashEvent(HashEvent * event) {
 
 void Simulator::processSendBlockEvent(BlockEvent * event) {
     time_t latency;
+    this->blockSet.insert(event->block.id);
     if (event->receiver < 0) {
         std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
         for(auto neighbor : neighbors){
@@ -331,7 +334,7 @@ void Simulator::processBroadcastPrivateChain(BroadcastPrivateChainEvent* event) 
 }
 
 void Simulator::processBlockCreation(HashEvent* event) {
-    if(miners[event->owner]->confirmBlock(*event)){
+    if(miners[event->owner]->confirmBlock(*event)){        
         std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
         time_t latency;
         for(auto neighbor : neighbors){

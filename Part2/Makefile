@@ -1,14 +1,14 @@
 # Part1/Makefile
 
 # Compiler and flags
-CXX = g++
+CXX = g++ 
 CXXFLAGS = -std=c++23
-DEBUG = 0
+DEBUG = 1
 WARNINGS = 0
 TOTAL_NODES = 10
 TTX_TIME = 5000
 BLK_TIME = 600000
-BLK_LIMIT = 200
+BLK_LIMIT = 10
 TIME_LIMIT = 10000000
 TIMEOUT = 100
 ECLIPSE = 1
@@ -44,7 +44,7 @@ run: all
 	rm -rf logs graphs
 	mkdir -p logs
 	mkdir -p graphs
-	./sim --total-nodes $(TOTAL_NODES) --ttx-time $(TTX_TIME) --blk-time $(BLK_TIME) --blk-limit $(BLK_LIMIT) --time-limit $(TIME_LIMIT) --timeout $(TIMEOUT)  --eclipse $(ECLIPSE) --malicious $(MALICIOUS)
+	./sim --total-nodes $(TOTAL_NODES) --ttx-time $(TTX_TIME) --blk-time $(BLK_TIME) --blk-limit $(BLK_LIMIT) --timeout $(TIMEOUT)  --eclipse $(ECLIPSE) --malicious $(MALICIOUS)
 	dot -Tpng honestGraph.dot -o graphs/honestGraph.png 1> /dev/null 2> /dev/null
 	dot -Tpng maliciousGraph.dot -o graphs/maliciousGraph.png 1> /dev/null 2> /dev/null
 	rm honestGraph.dot

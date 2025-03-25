@@ -76,7 +76,7 @@ public:
     MaliciousMiner& operator=(const MaliciousMiner& other);
     ~MaliciousMiner();
     virtual std::vector<Event*> receiveBlock(BlockEvent event, bool malicious = false);
-    std::vector<Event*> receiveGet(GetEvent event);
+    virtual std::vector<Event*> receiveGet(GetEvent event);
     std::vector<Event*> receiveTransactions(TransactionEvent event, bool malicious = false);
     std::vector<Event*> genTransaction(time_t timestamp, bool malicious=true);
     std::vector<Event*> receiveBroadcastPrivateChain(BroadcastPrivateChainEvent event);
@@ -95,8 +95,9 @@ class RingMaster: public MaliciousMiner {
         RingMaster(const RingMaster& other);
         RingMaster& operator=(const RingMaster& other);
         ~RingMaster();
-        std::vector<Event*> receiveBlock(BlockEvent event);
+        std::vector<Event*> receiveBlock(BlockEvent event, bool malicious = false);
         std::vector<Event*> genBlock(time_t currentTime);
+        std::vector<Event*> receiveGet(GetEvent event);
         bool confirmBlock(HashEvent event);
         std::vector<Event*> checkAndBroadcastPrivate(time_t currentTime);
 };

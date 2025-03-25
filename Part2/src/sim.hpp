@@ -22,6 +22,7 @@ private:
     Network *honestNetwork, *maliciousNetwork;
     std::vector<Miner *> miners;
     std::priority_queue<Event*, std::vector<Event*>, std::greater<Event*>> events;
+    std::set<blockID_t> blockSet;
     Block createGenesisBlock();
     void generateGraphViz(const std::string& honestNetworkFile = "honestGraph.dot", const std::string& maliciousNetworkFile = "maliciousGraph.dot");
     
