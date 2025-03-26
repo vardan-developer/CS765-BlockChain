@@ -63,21 +63,21 @@ double getUniformRandom(double a, double b) {
 }
 
 // Checks if a graph represented by adjacency lists is connected using BFS
-bool is_connected(const std::vector<std::unordered_set<int> >  &adj)
+bool is_connected(const std::vector<std::vector<minerID_t> >  &adj)
 {
     int n = adj.size();
     if (n == 0)
         return true;
     std::vector<bool> visited(n, false);
-    std::queue<int> q;
+    std::queue<minerID_t> q;
     q.push(0);
     visited[0] = true;
     int count = 1;
     while (!q.empty())
     {
-        int u = q.front();
+        minerID_t u = q.front();
         q.pop();
-        for (int v : adj[u])
+        for (minerID_t v : adj[u])
         {
             if (!visited[v])
             {
@@ -88,6 +88,13 @@ bool is_connected(const std::vector<std::unordered_set<int> >  &adj)
         }
     }
     return count == n;
+}
+
+double edge_connection_probability(int degree){
+    if(degree <= 3)return 1;
+    if(degree == 4)return 0.5;
+    if(degree == 5)return 0.3;
+    return 0;
 }
 
 // Generates a connected graph with n nodes, where each node has degree between 3 and 6
@@ -110,107 +117,155 @@ std::vector<std::vector<minerID_t> > generate_graph(int n) {
         }
         return adj;
     }
+    do {
+        adj.clear();
+        adj.resize(n);
+        std::vector<int> degrees(n, 3);
+        // if (n % 2 != 0)
+        //     degrees[0] = 4; // For odd n, set one node to degree 4
 
-    std::vector<int> degrees(n, 3);
-    if (n % 2 != 0)
-        degrees[0] = 4; // For odd n, set one node to degree 4
+        // bool connected = false;
+        // while (!connected) {
+        //     std::vector<minerID_t> stubs;
+        //     for (int i = 0; i < n; ++i) {
+        //         for (int j = 0; j < degrees[i]; ++j) {
+        //             stubs.push_back(i);
+        //         }
+        //     }
 
-    bool connected = false;
-    while (!connected) {
-        std::vector<minerID_t> stubs;
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < degrees[i]; ++j) {
-                stubs.push_back(i);
+        //     shuffle(stubs.begin(), stubs.end(), gen);
+
+        //     std::vector<std::vector<minerID_t> > adj(n);
+        //     std::unordered_set<std::pair<minerID_t, minerID_t>, pair_hash> edges;
+        //     bool valid = true;
+
+        //     for (size_t i = 0; i < stubs.size(); i += 2) {
+        //         minerID_t u = stubs[i];
+        //         minerID_t v = stubs[i + 1];
+        //         if (u == v) {
+        //             valid = false;
+        //             break;
+        //         }
+        //         // Ensure u < v to avoid duplicates
+        //         if (u > v)
+        //             std::swap(u, v);
+        //         if (edges.find(std::make_pair(u, v)) != edges.end()) {
+        //             valid = false;
+        //             break;
+        //         }
+        //         edges.insert(std::make_pair(u, v));
+        //         adj[u].push_back(v);
+        //         adj[v].push_back(u);
+        //     }
+
+        //     if (!valid)
+        //         continue;
+
+        //     // Check connectivity using BFS
+        //     std::vector<bool> visited(n, false);
+        //     std::queue<minerID_t> q;
+        //     q.push(0);
+        //     visited[0] = true;
+        //     int count = 0;
+
+        //     while (!q.empty()) {
+        //         minerID_t curr = q.front();
+        //         q.pop();
+        //         ++count;
+
+        //         for (minerID_t neighbor : adj[curr]) {
+        //             if (!visited[neighbor]) {
+        //                 visited[neighbor] = true;
+        //                 q.push(neighbor);
+        //             }
+        //         }
+        //     }
+
+        //     if (count == n)
+        //         connected = true;
+        // }
+
+        // // Augmentation phase: add edges until degrees reach 6
+        // std::vector<std::pair<minerID_t, minerID_t> > possible_edges;
+        // for (minerID_t u = 0; u < n; ++u) {
+        //     for (minerID_t v = u + 1; v < n; ++v) {
+        //         bool exists = false;
+        //         for (minerID_t neighbor : adj[u]) {
+        //             if (neighbor == v) {
+        //                 exists = true;
+        //                 break;
+        //             }
+        //         }
+        //         if (!exists)
+        //             possible_edges.emplace_back(u, v);
+        //     }
+        // }
+
+        // // shuffle(possible_edges.begin(), possible_edges.end(), std::mt19937(std::random_device()()));
+
+        // shuffle(possible_edges.begin(), possible_edges.end(), gen);
+
+        // std::vector<minerID_t> current_degrees(n);
+        // for (minerID_t i = 0; i < n; ++i)
+        //     current_degrees[i] = adj[i].size();
+
+        // for (const auto& edge : possible_edges) {
+        //     minerID_t u = edge.first;
+        //     minerID_t v = edge.second;
+        //     if (current_degrees[u] < 6 && current_degrees[v] < 6) {
+        //         adj[u].push_back(v);
+        //         adj[v].push_back(u);
+        //         ++current_degrees[u];
+        //         ++current_degrees[v];
+        //     }
+        // }
+        std::vector<int> current_degrees(n, 0);
+        std::vector<minerID_t> miners;
+        for(int i = 0; i < n; i++)miners.push_back(i);
+        std::shuffle(miners.begin(), miners.end(), gen);
+        for(int i=0; i<n; i++){
+            
+            while(current_degrees[i] < 3){
+                minerID_t j = getUniformRandom(0, miners.size()-1);
+                j = miners[j];
+                if(i == j || std::find(adj[i].begin(), adj[i].end(), j) != adj[i].end())continue;
+                if(current_degrees[i] >= 3)break;
+                if(current_degrees[j] >= 6){
+                    continue;
+                }
+                adj[i].push_back(j);
+                adj[j].push_back(i);
+                ++current_degrees[i];
+                ++current_degrees[j];
             }
         }
-
-        shuffle(stubs.begin(), stubs.end(), gen);
-
-        std::vector<std::vector<minerID_t> > adj(n);
-        std::unordered_set<std::pair<minerID_t, minerID_t>, pair_hash> edges;
-        bool valid = true;
-
-        for (size_t i = 0; i < stubs.size(); i += 2) {
-            minerID_t u = stubs[i];
-            minerID_t v = stubs[i + 1];
-            if (u == v) {
-                valid = false;
-                break;
-            }
-            // Ensure u < v to avoid duplicates
-            if (u > v)
-                std::swap(u, v);
-            if (edges.find(std::make_pair(u, v)) != edges.end()) {
-                valid = false;
-                break;
-            }
-            edges.insert(std::make_pair(u, v));
-            adj[u].push_back(v);
-            adj[v].push_back(u);
-        }
-
-        if (!valid)
-            continue;
-
-        // Check connectivity using BFS
-        std::vector<bool> visited(n, false);
-        std::queue<minerID_t> q;
-        q.push(0);
-        visited[0] = true;
-        int count = 0;
-
-        while (!q.empty()) {
-            minerID_t curr = q.front();
-            q.pop();
-            ++count;
-
-            for (minerID_t neighbor : adj[curr]) {
-                if (!visited[neighbor]) {
-                    visited[neighbor] = true;
-                    q.push(neighbor);
+        for(int i = 0; i < n; i++){
+            while(current_degrees[i] < 3){
+                for(int j = 0; j < n; j++){
+                    if(i == j || current_degrees[i] >= 3 || std::find(adj[i].begin(), adj[i].end(), j) != adj[i].end())continue;
+                    if(getUniformRandom(0, 1) < edge_connection_probability(current_degrees[j])){
+                        adj[i].push_back(j);
+                        adj[j].push_back(i);
+                        ++current_degrees[i];
+                        ++current_degrees[j];
+                    }
                 }
             }
         }
-
-        if (count == n)
-            connected = true;
-    }
-
-    // Augmentation phase: add edges until degrees reach 6
-    std::vector<std::pair<minerID_t, minerID_t> > possible_edges;
-    for (minerID_t u = 0; u < n; ++u) {
-        for (minerID_t v = u + 1; v < n; ++v) {
-            bool exists = false;
-            for (minerID_t neighbor : adj[u]) {
-                if (neighbor == v) {
-                    exists = true;
-                    break;
-                }
-            }
-            if (!exists)
-                possible_edges.emplace_back(u, v);
-        }
-    }
-
-    // shuffle(possible_edges.begin(), possible_edges.end(), std::mt19937(std::random_device()()));
-
-    shuffle(possible_edges.begin(), possible_edges.end(), gen);
-
-    std::vector<minerID_t> current_degrees(n);
-    for (minerID_t i = 0; i < n; ++i)
-        current_degrees[i] = adj[i].size();
-
-    for (const auto& edge : possible_edges) {
-        minerID_t u = edge.first;
-        minerID_t v = edge.second;
-        if (current_degrees[u] < 6 && current_degrees[v] < 6) {
-            adj[u].push_back(v);
-            adj[v].push_back(u);
-            ++current_degrees[u];
-            ++current_degrees[v];
-        }
-    }
-
+        // for(int i = 0; i < n; i++){
+        //     if(current_degrees[i] <= 3)continue;
+        //     for(auto j: adj[i]){
+        //         if(current_degrees[j] <= 3)continue;
+        //         if(getUniformRandom(0, 1) < edge_drop_probability(std::min(current_degrees[i], current_degrees[j]))){
+        //             adj[i].erase(std::find(adj[i].begin(), adj[i].end(), j));
+        //             adj[j].erase(std::find(adj[j].begin(), adj[j].end(), i));
+        //             --current_degrees[i];
+        //             --current_degrees[j];
+        //         }
+        //     }
+        // }
+        // std::cout << "here" << std::endl;
+    } while (!is_connected(adj));
     return adj;
 }
 
