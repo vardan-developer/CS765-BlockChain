@@ -25,7 +25,7 @@ private:
     double Tt;
     time_t timeLimit;
     long long blkCount;
-    bool show;
+    bool do_gen_block;
     time_t currentTime;
     Network *honestNetwork, *maliciousNetwork;
     std::vector<Miner *> miners;
@@ -36,7 +36,6 @@ private:
     int eventsProcessed;
     
 public:
-    // Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit = 10 * 60 * 1000, long long blkCount = 100);
     Simulator(ProgramSettings & settings);
     ~Simulator();
     void run();

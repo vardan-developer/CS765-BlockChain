@@ -12,13 +12,12 @@ class Network {
         for (int i = 0; i < networkTopology.size(); i++) {
             std::cout << "Node " << i << ": ";
             for (int j = 0; j < networkTopology[i].size(); j++) {
-                if(networkTopology[i][j].first >= 0) std::cout << j << "(" << networkTopology[i][j].first << ","<<networkTopology[i][j].second<<"), ";
+                if(networkTopology[i][j].first >= 0) std::cout << j << " ";
             }
             std::cout << std::endl;
         }
     }
     float getLatency(int i, int j) {
-        // std::cout << "data: " << 90.0 * Kb * 1000/networkTopology[i][j].second << std::endl;
         return networkTopology[i][j].first + ceil(getExponentialRandom(96.0 * Kb * 1000/networkTopology[i][j].second)) + ceil((Kb * 8.0 * 1000)/networkTopology[i][j].second);
     }
     std::vector<minerID_t> getNeighbors(int i) {

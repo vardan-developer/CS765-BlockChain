@@ -214,26 +214,35 @@ std::vector<std::vector<minerID_t> > generate_graph(int n) {
     return adj;
 }
 
+std::vector<std::vector<minerID_t>> permute_graph(std::vector<std::vector<minerID_t>> adj, int totalNodes){
+    std::vector<int> permutation = getRandomPermutation(totalNodes);
+    std::vector<std::vector<minerID_t>> permuted_adj(totalNodes);
+    for (int i = 0; i < totalNodes; ++i) {
+        for (int neighbor : adj[i]) {
+            permuted_adj[permutation[i]].push_back(permutation[neighbor]);
+        }
+    }
+    return permuted_adj;
+}
+
 // Generates network topology with latency and bandwidth parameters
 // z0 represents the fraction of slow miners in the network
 // Returns a matrix of pairs (latency, bandwidth) for each connection
 std::vector<std::vector<std::pair<int, int>>> generateNetworkTopology(int totalNodes, int totalMaliciousNodes){
-    std::vector<std::vector<minerID_t>> adj = generate_graph(totalNodes);
+    std::vector<std::vector<minerID_t>> adj = permute_graph(generate_graph(totalNodes), totalNodes);
     std::vector<std::vector<minerID_t>> adj_matrix(totalNodes, std::vector<minerID_t>(totalNodes, -1));
     for(int i = 0; i < totalNodes; i++){
         for(int j = 0; j < adj[i].size(); j++){
             adj_matrix[i][adj[i][j]] = adj[i][j];
         }
     }
-    std::vector<std::vector<std::pair<int, int> > > networkTopology(totalNodes);
+    std::vector<std::vector<std::pair<int, int>>> networkTopology(totalNodes);
     for(int i = 0; i < totalNodes; i++){
         networkTopology[i] = std::vector<std::pair<int, int> > (adj_matrix[i].size());
     }
 
     maliciousMiners.clear();
     honestMiners.clear();
-
-    // std::vector<int> perm = getRandomPermutation(totalNodes);
 
     for(int i = 0; i < totalMaliciousNodes; i++) maliciousMiners.insert(i);
     for(int i = 0; i < totalNodes; i++) honestMiners.insert(i);

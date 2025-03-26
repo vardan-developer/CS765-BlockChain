@@ -24,7 +24,8 @@ protected:
     std::map<blockID_t, std::set<minerID_t>> blkToMiner; 
     std::map<hash_t, bool> gotBlock;            // Whether a block has been received for a given hash
     std::map<hash_t, blockID_t> blockHashToID;  // Map from block hash to block ID
-    std::map<hash_t, std::queue<std::pair<minerID_t, bool>>> blockHashToMiners; // Map from block hash to miners who sent the hash to me
+    std::map<hash_t, std::queue<std::pair<minerID_t, bool>>> blockHashToMiners; // Map from block hash to queue miners who sent the hash to me
+    std::map<hash_t, std::set<std::pair<minerID_t, bool>>> blockHashToMinerSet; // Map from block hash to set of miners who sent the hash to me
 
     int totalMiners;              // Total number of miners in the network
     int txnInterval;              // Time interval between transaction generations
@@ -45,11 +46,11 @@ public:
     Miner(const Miner& other);
     Miner& operator=(const Miner& other);
     ~Miner();
-    std::vector<Event*> getEvents(time_t currentTime) ;
+    std::vector<Event*> getEvents(time_t currentTime, bool do_gen_block = true) ;
     virtual std::vector<Event*> genTransaction(time_t currentTime, bool malicious = false);
     virtual std::vector<Event*> genBlock(time_t currentTime);
     virtual std::vector<Event*> receiveTransactions(TransactionEvent event, bool malicious = false);
-    virtual std::vector<Event*> receiveBlock(BlockEvent event, bool malicious = false);
+    virtual std::vector<Event*> receiveBlock(BlockEvent event, bool malicious = false, bool do_gen_block = true);
     std::vector<Event*> receiveHash(HashEvent event);
     virtual std::vector<Event*> receiveGet(GetEvent event);
     hash_t genHash(Block block);
@@ -67,15 +68,15 @@ class MaliciousMiner: public Miner {
 protected:
     bool eclipse;
     std::map<blockID_t, bool> receivedBroadcastPrivateChain;
+    blockID_t lastReleasedMaliciousBlock;
 public:
     MaliciousMiner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors, std::vector<minerID_t> malicious_neighbors, bool eclipse = false);
-    // Constructor: Initialize miner with ID and network parameters
     MaliciousMiner(const MaliciousMiner&& other);
     MaliciousMiner& operator=(const MaliciousMiner&& other);
     MaliciousMiner(const MaliciousMiner& other);
     MaliciousMiner& operator=(const MaliciousMiner& other);
     ~MaliciousMiner();
-    virtual std::vector<Event*> receiveBlock(BlockEvent event, bool malicious = false);
+    virtual std::vector<Event*> receiveBlock(BlockEvent event, bool malicious = false, bool do_gen_block = true);
     virtual std::vector<Event*> receiveGet(GetEvent event);
     std::vector<Event*> receiveTransactions(TransactionEvent event, bool malicious = false);
     std::vector<Event*> genTransaction(time_t timestamp, bool malicious=true);
@@ -95,7 +96,7 @@ class RingMaster: public MaliciousMiner {
         RingMaster(const RingMaster& other);
         RingMaster& operator=(const RingMaster& other);
         ~RingMaster();
-        std::vector<Event*> receiveBlock(BlockEvent event, bool malicious = false);
+        std::vector<Event*> receiveBlock(BlockEvent event, bool malicious = false, bool do_gen_block = true);
         std::vector<Event*> genBlock(time_t currentTime);
         std::vector<Event*> receiveGet(GetEvent event);
         bool confirmBlock(HashEvent event);

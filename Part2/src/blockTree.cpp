@@ -31,7 +31,7 @@ BlockTreeNode & BlockTreeNode::operator=(const BlockTreeNode & other) {
 }
 
 Block BlockTree::getNextBlock(blockID_t blockID) {
-    BlockTreeNode * node = blockToNode[blockID];
+    BlockTreeNode * node = blockToNode.at(blockID);
     if(node->children.empty()) {
         return Block();
     }
@@ -39,8 +39,8 @@ Block BlockTree::getNextBlock(blockID_t blockID) {
 }
 
 Block BlockTree::getBlock(blockID_t blockID) {
-    if (blockToNode.find(blockID) != blockToNode.end() && blockToNode[blockID] != nullptr) { // TODO: Check this condition
-        return blockToNode[blockID]->block;
+    if (blockToNode.find(blockID) != blockToNode.end() && blockToNode.at(blockID) != nullptr) { // TODO: Check this condition
+        return blockToNode.at(blockID)->block;
     }
     return Block();
 }
@@ -76,7 +76,6 @@ BlockTree::~BlockTree() {
     }
     std::queue<BlockTreeNode *> q;
     q.push(genesis);
-
     while (!q.empty()) {
         BlockTreeNode * node = q.front();
         q.pop();
@@ -229,10 +228,9 @@ void BlockTree::updateBalance(BlockTreeNode * node) {
 // Add a new block to the tree
 int BlockTree::addBlock(Block & block, time_t arrivalTime) {
     // Check if block already exists
-    if (blockToNode.find(block.id) != blockToNode.end()) {
+    if (blockToNode.find(block.id) != blockToNode.end() && blockToNode.at(block.id)) {
         return -1;
     }
-    
     // Check if parent exists
     BlockTreeNode * parent = blockToNode[block.parentID];
     if (!parent) {
