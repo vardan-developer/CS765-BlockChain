@@ -11,7 +11,7 @@ extern time_t TIMEOUT;
 Miner::Miner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors)
     : id(id), blockTree(id, genesisBlock), totalMiners(totalMiners), 
       txnInterval(txnInterval), blkInterval(blkInterval), 
-      processingTxnTime(-1), totalBlocksGenerated(0), neighbors(neighbors) {}
+      processingTxnTime(-1), totalBlocksGenerated(0), neighbors(neighbors), file(std::ofstream ("logs/miner-" + std::to_string(id) + ".log")) {}
 
 // Copy constructor: creates a deep copy of another miner instance
 Miner::Miner(const Miner& other)
@@ -19,7 +19,7 @@ Miner::Miner(const Miner& other)
       totalMiners(other.totalMiners), txnInterval(other.txnInterval), 
       blkInterval(other.blkInterval), processingTxnTime(other.processingTxnTime), 
       processingBlock(other.processingBlock), 
-      totalBlocksGenerated(other.totalBlocksGenerated) {}
+      totalBlocksGenerated(other.totalBlocksGenerated), file(std::ofstream ("logs/miner-" + std::to_string(id) + ".log")) {}
 
 // Assignment operator: performs deep copy assignment between miner instances
 Miner& Miner::operator=(const Miner& other) {
@@ -31,6 +31,7 @@ Miner& Miner::operator=(const Miner& other) {
     this->processingTxnTime = other.processingTxnTime;
     this->processingBlock = other.processingBlock;
     this->totalBlocksGenerated = other.totalBlocksGenerated;
+    this->file = std::ofstream ("logs/miner-" + std::to_string(id) + ".log");
     return *this;
 }
 
@@ -39,7 +40,7 @@ Miner::Miner(const Miner&& other)
     : id(other.id), blockTree(std::move(other.blockTree)), 
       totalMiners(other.totalMiners), txnInterval(other.txnInterval), 
       blkInterval(other.blkInterval), processingTxnTime(other.processingTxnTime), 
-      processingBlock(other.processingBlock) {}
+      processingBlock(other.processingBlock), file(std::ofstream ("logs/miner-" + std::to_string(id) + ".log")) {}
 
 // Move assignment operator: transfers ownership of resources between miner instances
 Miner& Miner::operator=(const Miner&& other) {
@@ -51,6 +52,7 @@ Miner& Miner::operator=(const Miner&& other) {
     this->processingTxnTime = other.processingTxnTime;
     this->processingBlock = other.processingBlock;
     this->totalBlocksGenerated = other.totalBlocksGenerated;
+    this->file = std::ofstream ("logs/miner-" + std::to_string(id) + ".log");
     return *this;
 }
 
@@ -467,13 +469,22 @@ void Miner::printMiner(){
 
 // Destructor: exports block tree to DOT format for visualization
 Miner::~Miner(){
-    this->printSummary(false, false);
     blockTree.exportToDot("blockTree-" + std::to_string(id) + ".dot");
 }
 
 // Prints summary statistics about the miner's block tree
-void Miner::printSummary(bool fast, bool high) {
-    this->blockTree.printSummary(fast, high, this->totalBlocksGenerated);
+void Miner::printSummary() {
+    this->blockTree.printSummary(this->totalBlocksGenerated);
+}
+
+void MaliciousMiner::printSummary() {
+    file << "MaliciousMiner\n";
+    Miner::printSummary();
+}
+
+void RingMaster::printSummary() {
+    file << "RingMaster\n";
+    Miner::printSummary();
 }
 
 // Returns average length of branches in the block tree
@@ -570,7 +581,6 @@ std::vector<Event*> RingMaster::checkAndBroadcastPrivate(time_t currentTime, boo
     int honestLength = blockTree.getCurrent().height - branchBlock.height;
     int privateLength = privateBlockTree.getCurrent().height - branchBlock.height;
     bool panic = (honestLength == privateLength) || (honestLength == privateLength - 1);
-    if(do_anyways) std::cout << "Private Length: " << privateLength << std::endl;
     if (privateLength > 0 && (panic || do_anyways)) {
         Block privateBlock = privateBlockTree.getNextBlock(branchBlock.id);
         std::vector<Event*> newEvents = { new BroadcastPrivateChainEvent(EventType::BROADCAST_PRIVATE_CHAIN, privateBlockTree.getNextBlock(branchBlock.id).id, currentTime, id, id, -1, true, true) };

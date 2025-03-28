@@ -3,18 +3,20 @@
 
 #include "def.hpp"
 #include "utils.hpp"
+#include <fstream>
 
 class Network {
     public:
     std::vector<std::vector<std::pair<int, int>>> networkTopology;          // Adjaceny Matrix
     Network(int totalNodes, double maliciousFraction, bool malicious): networkTopology(malicious ? generateMaliciousNetworkTopology(totalNodes * maliciousFraction): generateNetworkTopology(totalNodes, maliciousFraction * totalNodes)) {
-        std::cout << "Network topology generated" << std::endl;
+        std::ofstream file (malicious ? "logs/maliciousNetworkTopology.log" : "logs/honestNetworkTopology.log" );
+        file << "Network topology generated" << std::endl;
         for (int i = 0; i < networkTopology.size(); i++) {
-            std::cout << "Node " << i << ": ";
+            file << "Node " << i << ": ";
             for (int j = 0; j < networkTopology[i].size(); j++) {
-                if(networkTopology[i][j].first >= 0) std::cout << j << " ";
+                if(networkTopology[i][j].first >= 0) file << j << " ";
             }
-            std::cout << std::endl;
+            file << std::endl;
         }
     }
     float getLatency(int i, int j) {

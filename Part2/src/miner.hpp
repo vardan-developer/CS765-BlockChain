@@ -5,6 +5,7 @@
 #include "blockTree.hpp"
 #include "transaction.hpp"
 #include "event.hpp"
+#include <fstream>
 #include <vector>
 /**
  * @brief Class representing a miner in the blockchain network
@@ -36,6 +37,8 @@ protected:
     std::vector<minerID_t> neighbors; // Neighbors of this miner
     std::vector<minerID_t> maliciousNeighbors;
     std::map<hash_t, time_t> timeout;                 // Timeout for sending next get request
+
+    std::ofstream file;
     
 public:
     // Constructor: Initialize miner with ID and network parameters
@@ -59,7 +62,7 @@ public:
     virtual bool confirmBlock(HashEvent event);
     int getID() const;
     virtual void printMiner();
-    virtual void printSummary(bool fast, bool high);
+    virtual void printSummary();
     float getRatio();
     float getAvgBranchLength();
 };
@@ -83,6 +86,7 @@ public:
     std::vector<Event*> receiveBroadcastPrivateChain(BroadcastPrivateChainEvent event);
     virtual std::vector<Event*> genBlock(time_t currentTime) {return std::vector<Event*>();}
     virtual bool confirmBlock(HashEvent event);
+    virtual void printSummary();
 };
 
 class RingMaster: public MaliciousMiner {
@@ -101,6 +105,7 @@ class RingMaster: public MaliciousMiner {
         std::vector<Event*> receiveGet(GetEvent event);
         bool confirmBlock(HashEvent event);
         std::vector<Event*> checkAndBroadcastPrivate(time_t currentTime, bool do_anyways = false);
+        virtual void printSummary();
 };
 
 #endif

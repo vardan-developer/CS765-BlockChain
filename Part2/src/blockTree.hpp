@@ -77,7 +77,7 @@ class BlockTree {
         void exportToDot(const std::string & filename) const;  // Export tree in DOT format
         void printTree(std::string filename) const;
         void printChain(BlockTreeNode* node) const;  // Print chain from node to genesis
-        void printSummary(bool fast, bool highCpu, long long totalBlocksGenerated);
+        void printSummary(long long totalBlocksGenerated);
         Block addCachedChild();  // Process a cached block
         long long getMainChainBlockCount();  // Count blocks in main chain
         float getRatio(long long totalBlocksGenerated);  // Calculate acceptance ratio

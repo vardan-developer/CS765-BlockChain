@@ -95,31 +95,6 @@ void Simulator::generateGraphViz(const std::string& honestNetworkFile, const std
 }
 
 // Constructor: Initializes the simulator with network parameters
-// n: number of miners
-// txnInterval: time between transactions
-// blkInterval: base block interval
-// timeLimit: simulation time limit
-// blkCount: number of blocks to simulate
-
-// Simulator::Simulator(int n, int txnInterval, int blkInterval, time_t timeLimit, long long blkCount) {
-//     totalMiners = n;
-//     txnInterval = txnInterval;
-//     blkInterval = blkInterval; // this is I for each miner it will be I/(fraction of hashing power)
-//     int totalHashingPower = 0;
-//     for(int i = 0; i < n; i++){
-//         totalHashingPower += (highCPUMiners.count(i) > 0) ? 10 : 1;
-//     }
-//     currentTime = 0;
-//     Block genesisBlock = createGenesisBlock();
-//     miners.reserve(n);
-//     for(int i = 0; i < n; i++){
-//         Miner * new_miner = new Miner(i, n, txnInterval, blkInterval*(totalHashingPower/(highCPUMiners.count(i) > 0 ? 10 : 1)), genesisBlock);
-//         miners.push_back(new_miner);
-//     }
-//     this->timeLimit = timeLimit;
-//     this->blkCount = blkCount;
-// }
-
 Simulator::Simulator(ProgramSettings & settings):
     totalMiners(settings.totalNodes),
     txnInterval(settings.Ttx),
@@ -158,16 +133,7 @@ Simulator::~Simulator() {
     std::vector<float> fast_high, fast_low, slow_high, slow_low;
     float tempRatio;
     for ( Miner * miner : miners) {
-        // bool fast = maliciousMiners.count(miner->getID());
-        // bool high = highCPUMiners.count(miner->getID());
-        bool isMalicious = maliciousMiners.count(miner->getID());
-        miner->printSummary(isMalicious, true);
-        // miner->printSummary(fast, high);
-        // if(tempRatio == -1) {delete miner; continue;}
-        // if(fast && high) fast_high.push_back(tempRatio);
-        // else if(fast && !high) fast_low.push_back(tempRatio);
-        // else if(!fast && high) slow_high.push_back(tempRatio);
-        // else slow_low.push_back(tempRatio);
+        miner->printSummary();
         delete miner;
     }
     delete honestNetwork;
@@ -201,6 +167,7 @@ void Simulator::run() {
         processEvent(event);
         delete event;
     }
+    std::cout << "Simulator::run - Finished Execution" << std::endl;
 }
 
 // Collects pending events from all miners and adds them to the event queue
@@ -360,11 +327,7 @@ void Simulator::processBlockCreation(HashEvent* event) {
 }
 
 // Core event processing function
-// Handles different types of events and their propagation through the network:
-// - Transaction broadcasting
-// - Block broadcasting
-// - Block creation
-// - Network message propagation
+// Handles different types of events and their propagation through the network
 void Simulator::processEvent(Event * event) {
     currentTime = event->timestamp;
     switch(event->type){

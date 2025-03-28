@@ -91,7 +91,7 @@ This command will:
 ## Output
 
 - The main simulation output is stored in `miners.txt`.
-- The log for every miner is generated in the `logs/` directory with file name `miner-<miner_ID>.logs`
+- The log for every miner is generated in the `logs/` directory with file name `miner-<miner_ID>.log`
 - Blockchain trees' visualizations along with the peer graph are generated in the `graphs/` directory.
 
 

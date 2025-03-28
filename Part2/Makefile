@@ -11,7 +11,7 @@ BLK_TIME = 600000
 BLK_LIMIT = 100
 TIME_LIMIT = 10000000
 TIMEOUT = 100000
-ECLIPSE = 1
+ECLIPSE = 0
 MALICIOUS = 0.6
 ifeq ($(DEBUG),1)
     CXXFLAGS += -g
@@ -78,5 +78,5 @@ g: clean $(TARGET)
 
 # Clean up build files
 clean:
-	rm -f $(TARGET) $(OBJS) *.logs miners.txt *.dot
+	rm -f $(TARGET) $(OBJS) *.log miners.txt *.dot
 	rm -rf logs/ graphs/
