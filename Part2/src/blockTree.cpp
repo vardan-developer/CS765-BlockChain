@@ -396,6 +396,8 @@ void BlockTree::printBlock(BlockTreeNode* node, time_t arrivalTime) {
 void BlockTree::printSummary(bool fast, bool highCpu, long long totalBlocksGenerated) {
     file << "Total Blocks Generated: " << totalBlocksGenerated << '\n';
     file << "Total Blocks in Main Chain: " << getMainChainBlockCount() << '\n';
+    file << "Acceptance Ratio: " << getRatio(totalBlocksGenerated) << '\n';
+    file << "Fraction of blocks in main chain: " << (float(getMainChainBlockCount())/(current->height)) << '\n';
     file << ( fast ? "Fast, " : "Slow, ") << ( highCpu ? "highCpu" : "lowCpu" ) << '\n';
     file << "Average Branch Length: " << averageBranchLength() << '\n';
 }

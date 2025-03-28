@@ -139,11 +139,13 @@ Simulator::Simulator(ProgramSettings & settings):
     miners.reserve(totalMiners);
     Miner* ringMaster = new RingMaster(0, totalMiners, txnInterval, blkInterval * totalMiners / (totalMiners * maliciousFraction), genesisBlock, honestNetwork->getNeighbors(0), maliciousNetwork->getNeighbors(0), settings.eclipse);
     miners.push_back(ringMaster);
-    for(int i = 1; i < totalMiners * maliciousFraction; i++) {
+    int maliciousCount = totalMiners * maliciousFraction;
+    for(int i = 1; i < maliciousCount; i++) {
+
         Miner * new_miner = new MaliciousMiner(i, totalMiners, txnInterval, INT_MAX, genesisBlock, honestNetwork->getNeighbors(i), maliciousNetwork->getNeighbors(i), settings.eclipse);
         miners.push_back(new_miner);
     }
-    for(int i = totalMiners * maliciousFraction; i < totalMiners; i++) {
+    for(int i = maliciousCount; i < totalMiners; i++) {
         Miner * new_miner = new Miner(i, totalMiners, txnInterval, blkInterval * totalMiners, genesisBlock, honestNetwork->getNeighbors(i));
         miners.push_back(new_miner);
     }
@@ -158,7 +160,8 @@ Simulator::~Simulator() {
     for ( Miner * miner : miners) {
         // bool fast = maliciousMiners.count(miner->getID());
         // bool high = highCPUMiners.count(miner->getID());
-        // tempRatio = miner->getRatio();
+        bool isMalicious = maliciousMiners.count(miner->getID());
+        miner->printSummary(isMalicious, true);
         // miner->printSummary(fast, high);
         // if(tempRatio == -1) {delete miner; continue;}
         // if(fast && high) fast_high.push_back(tempRatio);

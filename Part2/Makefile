@@ -12,7 +12,7 @@ BLK_LIMIT = 100
 TIME_LIMIT = 10000000
 TIMEOUT = 100000
 ECLIPSE = 1
-MALICIOUS = 0.35
+MALICIOUS = 0.6
 ifeq ($(DEBUG),1)
     CXXFLAGS += -g
 endif
@@ -39,6 +39,12 @@ TARGET = sim
 
 # Default target: build the executable
 all: $(TARGET)
+
+gdb: all
+	rm -rf logs graphs
+	mkdir -p logs
+	mkdir -p graphs
+	gdb --args ./sim --total-nodes $(TOTAL_NODES) --ttx-time $(TTX_TIME) --blk-time $(BLK_TIME) --blk-limit $(BLK_LIMIT) --timeout $(TIMEOUT)  --eclipse $(ECLIPSE) --malicious $(MALICIOUS)
 
 run: all
 	rm -rf logs graphs
