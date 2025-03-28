@@ -4,6 +4,8 @@
 #include <map>
 #include <queue>
 
+extern std::set<minerID_t> maliciousMiners;
+
 // Default constructor for tree node
 BlockTreeNode::BlockTreeNode(): arrivalTime(0), height(0), parent(nullptr) {}
 
@@ -368,13 +370,15 @@ void BlockTree::exportToDot(const std::string & filename) const {
 
     std::function<void(BlockTreeNode*)> traverse = [&](BlockTreeNode* node) {
         if (!node) return;
+        std::string color = (maliciousMiners.find(node->block.owner) != maliciousMiners.end()) ? "orange" : "lightgreen";
 
         file << "    \"" << node->block.id << "\" [label=\"Block " << node->block.id 
              << "\\nHeight: " << node->height 
              << "\\nMiner ID: " << node->block.owner
              << "\\nBlock Hash: " << node->block.hash()
              << "\\nBlock Creation Time: " << node->block.timestamp
-             << "\\nTimestamp: " << node->arrivalTime << "\"];\n";
+             << "\\nTimestamp: " << node->arrivalTime 
+             << "\", style=filled, fillcolor=\"" << color << "\"];\n";
 
         for (BlockTreeNode* child : node->children) {
             file << "    \"" << node->block.id << "\" -> \"" << child->block.id << "\";\n";

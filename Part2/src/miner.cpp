@@ -469,22 +469,24 @@ void Miner::printMiner(){
 
 // Destructor: exports block tree to DOT format for visualization
 Miner::~Miner(){
-    blockTree.exportToDot("blockTree-" + std::to_string(id) + ".dot");
 }
 
 // Prints summary statistics about the miner's block tree
 void Miner::printSummary() {
     this->blockTree.printSummary(this->totalBlocksGenerated);
+    blockTree.exportToDot("blockTree-" + std::to_string(id) + ".dot");
 }
 
 void MaliciousMiner::printSummary() {
     file << "MaliciousMiner\n";
-    Miner::printSummary();
+    this->blockTree.printSummary(this->totalBlocksGenerated);
+    blockTree.exportToDot("blockTree-" + std::to_string(id) + ".dot");
 }
 
 void RingMaster::printSummary() {
     file << "RingMaster\n";
-    Miner::printSummary();
+    this->blockTree.printSummary(this->totalBlocksGenerated);
+    blockTree.exportToDot("blockTree-" + std::to_string(id) + ".dot");
 }
 
 // Returns average length of branches in the block tree
