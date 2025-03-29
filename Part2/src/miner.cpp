@@ -354,7 +354,7 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious, bool d
         if ( possibleAddedChild.id >= 0 ) {
             chainSwitched |= blockTree.switchToLongestChain(possibleAddedChild, memPool);
             std::vector<minerID_t> neighbors = getNeighbors();
-            if(malicious && !event.malicious) {
+            if(malicious) {
                 for (auto peer: maliciousNeighbors) {
                     if (peer == id) continue;
                     if(blkToMiner[possibleAddedChild.id].find(peer) == blkToMiner[possibleAddedChild.id].end()){
@@ -384,7 +384,7 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious, bool d
     blkToMiner[event.block.id].insert(event.owner);
     std::vector<minerID_t> neighbors = getNeighbors();
 
-    if(malicious && !event.malicious) {
+    if(malicious) {
         for (auto peer: maliciousNeighbors){
             if(peer == id) continue;
             if(blkToMiner[event.block.id].find(peer) == blkToMiner[event.block.id].end()){
