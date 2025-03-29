@@ -12,7 +12,7 @@ BLK_LIMIT = 100
 TIME_LIMIT = 10000000
 TIMEOUT = 100000
 ECLIPSE = 0
-MALICIOUS = 0.6
+MALICIOUS = 0.5
 GEN_GRAPHS = 1
 ifeq ($(DEBUG),1)
     CXXFLAGS += -g
@@ -61,6 +61,8 @@ ifeq ($(GEN_GRAPHS),1)
 		dot -Tpng $$file -o graphs/$${file%.dot}.png 1> /dev/null  2>/dev/null; \
 		rm $$file; \
 	done
+
+	python3 plot_network.py
 endif
 
 analyze: run
