@@ -130,7 +130,6 @@ Simulator::Simulator(ProgramSettings & settings):
 // Calculates and displays average mining ratios for different miner categories
 Simulator::~Simulator() {
     this->generateGraphViz();
-    std::vector<float> fast_high, fast_low, slow_high, slow_low;
     float tempRatio;
     for ( Miner * miner : miners) {
         miner->printSummary();

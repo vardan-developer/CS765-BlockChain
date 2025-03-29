@@ -530,7 +530,7 @@ std::vector<Event*> MaliciousMiner::receiveBroadcastPrivateChain(BroadcastPrivat
         for(auto hash: hashes) {
             for(auto peer: neighbors) {
                 if (peer == id) continue;
-                newEvents.push_back(new HashEvent(EventType::SEND_HASH, hash, event.timestamp, event.owner, id, peer, true, true));
+                newEvents.push_back(new HashEvent(EventType::SEND_HASH, hash, event.timestamp, event.owner, id, peer, false, false));
             }
         }
     }
