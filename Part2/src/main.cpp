@@ -5,7 +5,6 @@
 void printNetworkTopology(std::vector<std::vector<std::pair<int, int>>> networkTopology);
 
 // std::vector<std::vector<std::pair<int, int>>> networkTopology;
-std::set<minerID_t> highCPUMiners;
 // networkTopology[i][j] = (neighborID, (rho_ij, c_ij))
 // latency = rho_ij + |m| * 1000 / c_ij + d_ij -> in milliseconds
 // d_ij is randomly chosen from a exponential dist with mean 96*1000Kbits/c_ij (in milliseconds)
@@ -21,10 +20,6 @@ int main(int argc, char *argv[])
         std::cerr << errorMsg << std::endl;
         return 1;
     }
-
-    // networkTopology = generateNetworkTopology(settings.totalNodes, settings.z0);
-    // highCPUMiners = getHighCPUMiners(settings.totalNodes, settings.z1);
-    // Simulator simulator(settings.totalNodes, settings.Ttx, settings.I, settings.timeLimit, settings.blkLimit);
     Simulator simulator(settings);
     simulator.run();
 }
