@@ -2,6 +2,7 @@
 #include "blockTree.hpp"
 #include "def.hpp"
 #include "utils.hpp"
+#include <utility>
 
 // Network topology representing connections between miners
 extern std::vector<std::vector<std::pair<int, int> > > networkTopology;
@@ -408,6 +409,7 @@ std::vector<Event*> Miner::receiveHash(HashEvent event) {
         return std::vector<Event*>();
     }
     if (blockHashToMinerSet[event.hash].find(std::make_pair(event.sender, event.malicious)) != blockHashToMinerSet[event.hash].end()) return std::vector<Event*> ();
+    blockHashToMinerSet[event.hash].insert(std::make_pair(event.sender, event.malicious));
     blockHashToMiners[event.hash].push(std::make_pair(event.sender, event.malicious));
     if(timeout[event.hash] < event.timestamp){
         auto [neighbor, malicious] = blockHashToMiners[event.hash].front();
@@ -425,7 +427,7 @@ std::vector<Event*> Miner::receiveGet(GetEvent event) {
     }
     blockID_t blockID = blockHashToID[event.hash];
     Block block = blockTree.getBlock(blockID);
-    return {new BlockEvent(EventType::SEND_BLOCK, block, event.timestamp, id, id, event.sender, true, event.malicious)};
+    return {new BlockEvent(EventType::SEND_BLOCK, block, event.timestamp, id, id, event.sender, false, event.malicious)};
 }
 
 // Returns list of miners directly connected to this miner in the network
@@ -473,18 +475,6 @@ Miner::~Miner(){
 
 // Prints summary statistics about the miner's block tree
 void Miner::printSummary() {
-    this->blockTree.printSummary(this->totalBlocksGenerated);
-    blockTree.exportToDot("blockTree-" + std::to_string(id) + ".dot");
-}
-
-void MaliciousMiner::printSummary() {
-    file << "MaliciousMiner\n";
-    this->blockTree.printSummary(this->totalBlocksGenerated);
-    blockTree.exportToDot("blockTree-" + std::to_string(id) + ".dot");
-}
-
-void RingMaster::printSummary() {
-    file << "RingMaster\n";
     this->blockTree.printSummary(this->totalBlocksGenerated);
     blockTree.exportToDot("blockTree-" + std::to_string(id) + ".dot");
 }

@@ -103,7 +103,7 @@ std::vector<std::vector<minerID_t> > generate_graph(int n) {
     std::vector<std::vector<minerID_t> > adj(n);
 
     if (n < 4) {
-        std::cerr << "Error: n must be at least 4." << std::endl;
+        std::cerr << "Error: n must be at least 4, given " << n << std::endl;
         exit(1);
     }
 

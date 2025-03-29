@@ -86,7 +86,6 @@ public:
     std::vector<Event*> receiveBroadcastPrivateChain(BroadcastPrivateChainEvent event);
     virtual std::vector<Event*> genBlock(time_t currentTime) {return std::vector<Event*>();}
     virtual bool confirmBlock(HashEvent event);
-    virtual void printSummary();
 };
 
 class RingMaster: public MaliciousMiner {
@@ -105,7 +104,6 @@ class RingMaster: public MaliciousMiner {
         std::vector<Event*> receiveGet(GetEvent event);
         bool confirmBlock(HashEvent event);
         std::vector<Event*> checkAndBroadcastPrivate(time_t currentTime, bool do_anyways = false);
-        virtual void printSummary();
 };
 
 #endif

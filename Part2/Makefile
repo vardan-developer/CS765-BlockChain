@@ -13,6 +13,7 @@ TIME_LIMIT = 10000000
 TIMEOUT = 100000
 ECLIPSE = 0
 MALICIOUS = 0.6
+GEN_GRAPHS = 1
 ifeq ($(DEBUG),1)
     CXXFLAGS += -g
 endif
@@ -51,6 +52,7 @@ run: all
 	mkdir -p logs
 	mkdir -p graphs
 	./sim --total-nodes $(TOTAL_NODES) --ttx-time $(TTX_TIME) --blk-time $(BLK_TIME) --blk-limit $(BLK_LIMIT) --timeout $(TIMEOUT)  --eclipse $(ECLIPSE) --malicious $(MALICIOUS)
+ifeq ($(GEN_GRAPHS),1)
 	dot -Tpng honestGraph.dot -o graphs/honestGraph.png 1> /dev/null 2> /dev/null
 	dot -Tpng maliciousGraph.dot -o graphs/maliciousGraph.png 1> /dev/null 2> /dev/null
 	rm honestGraph.dot
@@ -59,6 +61,7 @@ run: all
 		dot -Tpng $$file -o graphs/$${file%.dot}.png 1> /dev/null  2>/dev/null; \
 		rm $$file; \
 	done
+endif
 
 analyze: run
 	for file in blockTree-*.dot; do \
