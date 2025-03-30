@@ -607,6 +607,7 @@ std::vector<Event*> RingMaster::checkAndBroadcastPrivate(time_t currentTime, boo
             blockTree.addBlock(privateBlock, currentTime);
             blockTree.switchToLongestChain(privateBlock, memPool);
             privateBlock = privateBlockTree.getNextBlock(privateBlock.id);
+            lastReleasedMaliciousBlock = privateBlock.id;
         }
         branchBlock = Block();
         privateBlockTree = BlockTree();
@@ -622,19 +623,23 @@ std::vector<Event*> RingMaster::checkAndBroadcastPrivate(time_t currentTime, boo
 }
 
 std::vector<Event*> RingMaster::receiveGet(GetEvent event){
-    if(eclipse && !event.malicious) {
-        return std::vector<Event*>();
-    }
-    if (gotBlock.find(event.hash) == gotBlock.end()){
-        return std::vector<Event*>();
-    }
-    blockID_t blockID = blockHashToID[event.hash];
-    Block block = privateBlockTree.getBlock(blockID);
-    if (block.id < 0) {
-       block = blockTree.getBlock(blockID);
-    }
-    return {new BlockEvent(EventType::SEND_BLOCK, block, event.timestamp, id, id, event.sender, true, event.malicious)};
 
+    if(blockHashToID.find(event.hash) == blockHashToID.end()) return std::vector<Event*>();
+
+    blockID_t blockID = blockHashToID[event.hash];
+    if(!eclipse || event.malicious) {
+        Block block = privateBlockTree.getBlock(blockID);
+        if (block.id < 0) {
+            block = blockTree.getBlock(blockID);
+        }
+        return {new BlockEvent(EventType::SEND_BLOCK, block, event.timestamp, id, id, event.sender, true, event.malicious)};
+    }
+    
+    if (blockHashToID[event.hash] <= lastReleasedMaliciousBlock) {
+        return Miner::receiveGet(event);
+    } else {
+        return std::vector<Event*>();
+    }
 }
 
 std::vector<Event*> RingMaster::genBlock(time_t currentTime){ //TODO: Implement
