@@ -19,6 +19,7 @@ protected:
     BlockTree blockTree;           // Local copy of the blockchain
     Block processingBlock;   // ID of block currently being processed
     txnID_t processingTxnID;      // ID of transaction currently being processed
+    blockID_t lastReleasedMaliciousBlock;
     
     // Maps to track which miners have received which transactions/blocks
     std::map<txnID_t, std::set<minerID_t>> txnToMiner;
@@ -71,7 +72,7 @@ class MaliciousMiner: public Miner {
 protected:
     bool eclipse;
     std::map<blockID_t, bool> receivedBroadcastPrivateChain;
-    blockID_t lastReleasedMaliciousBlock;
+    // blockID_t lastReleasedMaliciousBlock;
 public:
     MaliciousMiner(minerID_t id, int totalMiners, int txnInterval, int blkInterval, Block genesisBlock, std::vector<minerID_t> neighbors, std::vector<minerID_t> malicious_neighbors, bool eclipse = false);
     MaliciousMiner(const MaliciousMiner&& other);

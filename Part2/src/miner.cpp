@@ -363,11 +363,13 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious, bool d
                     }
                 }
             }
-            for (auto peer: neighbors){
-                if (peer == id) continue;
-                if(blkToMiner[possibleAddedChild.id].find(peer) == blkToMiner[possibleAddedChild.id].end()){
-                    blkToMiner[possibleAddedChild.id].insert(peer);
-                    newEvents.push_back(new HashEvent(EventType::SEND_HASH, possibleAddedChild.hash(), event.timestamp, id, id, peer, false, false));
+            if(!malicious ||(malicious && (event.block.owner != 0 || event.block.id <= lastReleasedMaliciousBlock))) {
+                for (auto peer: neighbors){
+                    if (peer == id) continue;
+                    if(blkToMiner[possibleAddedChild.id].find(peer) == blkToMiner[possibleAddedChild.id].end()){
+                        blkToMiner[possibleAddedChild.id].insert(peer);
+                        newEvents.push_back(new HashEvent(EventType::SEND_HASH, possibleAddedChild.hash(), event.timestamp, id, id, peer, false, false));
+                    }
                 }
             }
         }
@@ -393,11 +395,13 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious, bool d
             }
         }
     }
-    for (auto peer: neighbors){
-        if(peer == id) continue;
-        if(blkToMiner[event.block.id].find(peer) == blkToMiner[event.block.id].end()){
-            blkToMiner[event.block.id].insert(peer);
-            newEvents.push_back(new HashEvent(EventType::SEND_HASH, event.block.hash(), event.timestamp, id, id, peer, false, false));
+    if(!malicious ||(malicious && (event.block.owner != 0 || event.block.id <= lastReleasedMaliciousBlock))) {
+        for (auto peer: neighbors){
+            if(peer == id) continue;
+            if(blkToMiner[event.block.id].find(peer) == blkToMiner[event.block.id].end()){
+                blkToMiner[event.block.id].insert(peer);
+                newEvents.push_back(new HashEvent(EventType::SEND_HASH, event.block.hash(), event.timestamp, id, id, peer, false, false));
+            }
         }
     }
 
