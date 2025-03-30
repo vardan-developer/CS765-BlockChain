@@ -2,8 +2,8 @@
 
 // Random number generation setup
 std::random_device rd;
-std::mt19937 gen(rd()); 
-// std::mt19937 gen(25); // Commented out fixed seed
+// std::mt19937 gen(rd()); 
+std::mt19937 gen(25); // Commented out fixed seed
 std::set<minerID_t> maliciousMiners;
 std::set<minerID_t> honestMiners;  
 
@@ -252,19 +252,6 @@ std::vector<std::vector<minerID_t> > generate_graph(int n) {
                 }
             }
         }
-        // for(int i = 0; i < n; i++){
-        //     if(current_degrees[i] <= 3)continue;
-        //     for(auto j: adj[i]){
-        //         if(current_degrees[j] <= 3)continue;
-        //         if(getUniformRandom(0, 1) < edge_drop_probability(std::min(current_degrees[i], current_degrees[j]))){
-        //             adj[i].erase(std::find(adj[i].begin(), adj[i].end(), j));
-        //             adj[j].erase(std::find(adj[j].begin(), adj[j].end(), i));
-        //             --current_degrees[i];
-        //             --current_degrees[j];
-        //         }
-        //     }
-        // }
-        // std::cout << "here" << std::endl;
     } while (!is_connected(adj));
     return adj;
 }

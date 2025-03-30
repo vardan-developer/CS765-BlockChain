@@ -215,12 +215,12 @@ void Simulator::processSendHashEvent(HashEvent * event) {
         std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
-            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);
+            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor, 64) : honestNetwork->getLatency(event->sender, neighbor, 64);
             HashEvent* newEvent = new HashEvent(EventType::RECEIVE_HASH, event->hash, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
             this->events.push((Event*) newEvent);
         }
     } else {
-        latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver) : honestNetwork->getLatency(event->sender, event->receiver);
+        latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver, 64) : honestNetwork->getLatency(event->sender, event->receiver, 64);
         HashEvent* newEvent = new HashEvent(EventType::RECEIVE_HASH, event->hash, event->timestamp + latency, event->owner, event->sender, event->receiver, event->broadcast, event->malicious);
         this->events.push((Event*) newEvent);
     }
@@ -233,12 +233,12 @@ void Simulator::processSendBlockEvent(BlockEvent * event) {
         std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
-            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);
+            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor, Mb) : honestNetwork->getLatency(event->sender, neighbor, Mb);
             BlockEvent* newEvent = new BlockEvent(EventType::RECEIVE_BLOCK, event->block, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
             this->events.push((Event*) newEvent);
         }
     } else {
-        latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver) : honestNetwork->getLatency(event->sender, event->receiver);
+        latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver, Mb) : honestNetwork->getLatency(event->sender, event->receiver, Mb);
         BlockEvent* newEvent = new BlockEvent(EventType::RECEIVE_BLOCK, event->block, event->timestamp + latency, event->owner, event->sender, event->receiver, event->broadcast, event->malicious);
         this->events.push((Event*) newEvent);
     }
@@ -250,12 +250,12 @@ void Simulator::processSendTransactionEvent(TransactionEvent * event) {
         std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
-            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);
+            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor, Kb) : honestNetwork->getLatency(event->sender, neighbor, Kb);
             TransactionEvent* newEvent = new TransactionEvent(EventType::RECEIVE_TRANSACTION, event->transaction, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
             this->events.push((Event*) newEvent);
         }
     } else {
-        latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver) : honestNetwork->getLatency(event->sender, event->receiver);
+        latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver, Kb) : honestNetwork->getLatency(event->sender, event->receiver, Kb);
         TransactionEvent* newEvent = new TransactionEvent(EventType::RECEIVE_TRANSACTION, event->transaction, event->timestamp + latency, event->owner, event->sender, event->receiver, event->broadcast, event->malicious);
         this->events.push((Event*) newEvent);
     }
@@ -267,12 +267,12 @@ void Simulator::processSendGetEvent(GetEvent * event) {
         std::vector<minerID_t> neighbors = event->malicious ? maliciousNetwork->getNeighbors(event->sender) : honestNetwork->getNeighbors(event->sender);
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
-            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);
+            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor, 64) : honestNetwork->getLatency(event->sender, neighbor, 64);
             GetEvent* newEvent = new GetEvent(EventType::RECEIVE_GET, event->hash, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
             this->events.push((Event*) newEvent);
         }
     } else {
-        latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver) : honestNetwork->getLatency(event->sender, event->receiver);
+        latency = event->malicious ? maliciousNetwork->getLatency(event->sender, event->receiver, 64) : honestNetwork->getLatency(event->sender, event->receiver, 64);
         GetEvent* newEvent = new GetEvent(EventType::RECEIVE_GET, event->hash, event->timestamp + latency, event->owner, event->sender, event->receiver, event->broadcast, event->malicious);
         this->events.push((Event*) newEvent);
     }
@@ -302,12 +302,12 @@ void Simulator::processBroadcastPrivateChain(BroadcastPrivateChainEvent* event) 
         std::vector<minerID_t> neighbors = maliciousNetwork->getNeighbors(event->sender);
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
-            latency = maliciousNetwork->getLatency(event->sender, neighbor);
+            latency = maliciousNetwork->getLatency(event->sender, neighbor, 64);
             BroadcastPrivateChainEvent* newEvent = new BroadcastPrivateChainEvent(EventType::BROADCAST_PRIVATE_CHAIN, event->block_id, event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, true);
             this->events.push((Event*) newEvent);
         }
     } else {
-        ((MaliciousMiner*)(miners[event->receiver]))->receiveBroadcastPrivateChain(* event);
+        this->addEvents(((MaliciousMiner*)(miners[event->receiver]))->receiveBroadcastPrivateChain(* event));
     }
 }
 
@@ -318,7 +318,7 @@ void Simulator::processBlockCreation(HashEvent* event) {
         // TODO: Below loop is iterating over wrong neighbors
         for(auto neighbor : neighbors){
             if(neighbor == event->sender) continue;
-            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor) : honestNetwork->getLatency(event->sender, neighbor);
+            latency = event->malicious ? maliciousNetwork->getLatency(event->sender, neighbor, 64) : honestNetwork->getLatency(event->sender, neighbor, 64);
             HashEvent* newEvent = new HashEvent(EventType::SEND_HASH, event->hash,  event->timestamp + latency, event->owner, event->sender, neighbor, event->broadcast, event->malicious);
             this->events.push((Event*) newEvent);
         }

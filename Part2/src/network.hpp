@@ -19,8 +19,8 @@ class Network {
             file << std::endl;
         }
     }
-    float getLatency(int i, int j) {
-        return networkTopology[i][j].first + ceil(getExponentialRandom(96.0 * Kb * 1000/networkTopology[i][j].second)) + ceil((Kb * 8.0 * 1000)/networkTopology[i][j].second);
+    float getLatency(int i, int j, int message_size) {
+        return networkTopology[i][j].first + ceil(getExponentialRandom(96.0 * Kb * 1000/networkTopology[i][j].second)) + ceil((message_size * 8.0 * 1000)/networkTopology[i][j].second);
     }
     std::vector<minerID_t> getNeighbors(int i) {
         std::vector<minerID_t> neighbors;
