@@ -2,8 +2,8 @@
 
 // Random number generation setup
 std::random_device rd;
-// std::mt19937 gen(rd()); 
-std::mt19937 gen(25); // Commented out fixed seed
+std::mt19937 gen(rd()); 
+// std::mt19937 gen(25); // Commented out fixed seed
 std::set<minerID_t> maliciousMiners;
 std::set<minerID_t> honestMiners;  
 

@@ -11,7 +11,7 @@ BLK_TIME = 600000
 BLK_LIMIT = 100
 TIME_LIMIT = 10000000
 TIMEOUT = 100000
-ECLIPSE = 0
+ECLIPSE = 1
 MALICIOUS = 0.5
 GEN_GRAPHS = 1
 ifeq ($(DEBUG),1)
@@ -62,7 +62,7 @@ ifeq ($(GEN_GRAPHS),1)
 		rm $$file; \
 	done
 
-	python3 plot_network.py
+	# python3 plot_network.py
 endif
 
 analyze: run
