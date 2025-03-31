@@ -342,12 +342,12 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious, bool d
         return std::vector<Event*> ();
     }
 
-    neighborToResponsePercent[event.sender].first++;
     
     hash_t hash_blk = event.block.hash();
     if(blockHashToMiners.find(hash_blk) == blockHashToMiners.end()){
         return std::vector<Event*>();
     }
+    neighborToResponsePercent[event.sender].first++;
     gotBlock[hash_blk] = true;
     blockHashToMiners.erase(hash_blk);
     timeout.erase(hash_blk);
@@ -440,6 +440,7 @@ std::vector<Event*> Miner::receiveHash(HashEvent event) {
                 malicious = m;
             }
         }
+        neighborToResponsePercent[neighbor].second++;
         timeout[event.hash] = event.timestamp + TIMEOUT;
         return {new GetEvent(EventType::SEND_GET, event.hash, event.timestamp, id, id, neighbor, false, malicious)};
     }
