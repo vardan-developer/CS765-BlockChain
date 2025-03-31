@@ -28,6 +28,7 @@ protected:
     std::map<hash_t, blockID_t> blockHashToID;  // Map from block hash to block ID
     std::map<hash_t, std::queue<std::pair<minerID_t, bool>>> blockHashToMiners; // Map from block hash to queue miners who sent the hash to me
     std::map<hash_t, std::set<std::pair<minerID_t, bool>>> blockHashToMinerSet; // Map from block hash to set of miners who sent the hash to me
+    std::map<minerID_t, std::pair<long long, long long>> neighborToResponsePercent;
 
     int totalMiners;              // Total number of miners in the network
     int txnInterval;              // Time interval between transaction generations

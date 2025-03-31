@@ -214,10 +214,20 @@ std::vector<Event*> Miner::genGetRequest(time_t currentTime) {
     std::vector<Event*> events;
     for(auto [hash, timeout_time] : timeout) {
         if (timeout_time < currentTime) {
-            auto [neighbor, malicious] = blockHashToMiners[hash].front();
-            blockHashToMiners[hash].push(blockHashToMiners[hash].front());
-            blockHashToMiners[hash].pop();
+            int neighbor = blockHashToMinerSet[hash].begin()->first;
+            bool malicious = blockHashToMinerSet[hash].begin()->second;
+            auto [responses, attempts] = neighborToResponsePercent[neighbor];
+            float max_response = attempts ? float(responses)/attempts : 1;
+            for (auto [n, m] : blockHashToMinerSet[hash]) {
+                auto [responses, attempts] = neighborToResponsePercent[n];
+                if ( max_response < (attempts ? float(responses)/attempts : 1)) {
+                    neighbor = n;
+                    malicious = m;
+                }
+            }
             timeout[hash] = currentTime + TIMEOUT;
+            if (neighborToResponsePercent.find(neighbor) == neighborToResponsePercent.end()) neighborToResponsePercent[neighbor] = std::make_pair(0, 0);
+            neighborToResponsePercent[neighbor].second++;
             events.push_back(new GetEvent(EventType::SEND_GET, hash, currentTime, id, id, neighbor, false, malicious));
         }
     }
@@ -331,6 +341,8 @@ std::vector<Event*> Miner::receiveBlock(BlockEvent event, bool malicious, bool d
         auto block = blockTree.getBlock(event.block.id);
         return std::vector<Event*> ();
     }
+
+    neighborToResponsePercent[event.sender].first++;
     
     hash_t hash_blk = event.block.hash();
     if(blockHashToMiners.find(hash_blk) == blockHashToMiners.end()){
@@ -417,9 +429,17 @@ std::vector<Event*> Miner::receiveHash(HashEvent event) {
     blockHashToMinerSet[event.hash].insert(std::make_pair(event.sender, event.malicious));
     blockHashToMiners[event.hash].push(std::make_pair(event.sender, event.malicious));
     if(timeout[event.hash] < event.timestamp){
-        auto [neighbor, malicious] = blockHashToMiners[event.hash].front();
-        blockHashToMiners[event.hash].push(blockHashToMiners[event.hash].front());
-        blockHashToMiners[event.hash].pop();
+        int neighbor = blockHashToMinerSet[event.hash].begin()->first;
+        bool malicious = blockHashToMinerSet[event.hash].begin()->second;
+        auto [responses, attempts] = neighborToResponsePercent[neighbor];
+        float max_response = attempts ? float(responses)/attempts : 1;
+        for (auto [n, m] : blockHashToMinerSet[event.hash]) {
+            auto [responses, attempts] = neighborToResponsePercent[n];
+            if ( max_response < (attempts ? float(responses)/attempts : 1)) {
+                neighbor = n;
+                malicious = m;
+            }
+        }
         timeout[event.hash] = event.timestamp + TIMEOUT;
         return {new GetEvent(EventType::SEND_GET, event.hash, event.timestamp, id, id, neighbor, false, malicious)};
     }
