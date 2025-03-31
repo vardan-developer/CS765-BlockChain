@@ -1,0 +1,41 @@
+digraph genBlockFlow {
+    rankdir=TB; // Top to bottom layout
+
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start genBlock", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End", shape=ellipse, fillcolor=lightblue];
+    return_empty [label="Return Empty Vector", shape=box, fillcolor=lightcoral];
+    
+    // Nodes
+    start_node;
+    check_processing [label="Block already processing?", shape=diamond, style=filled, fillcolor=khaki];
+    calc_delay_params [label="Calculate PoW Delay & Block Parameters\n(Parent, Height, ID, Time)", shape=box, style=filled, fillcolor=lightgrey];
+    create_coinbase [label="Create Coinbase Transaction\n(Mining Reward)", shape=box, style=filled, fillcolor=lightgrey];
+    init_block [label="Initialize New Block\n(with Coinbase Txn)", shape=box, style=filled, fillcolor=lightgrey];
+    select_validate_txns [label="Select & Add Valid Transactions\nfrom Mempool to Block", shape=box, style="filled,rounded", fillcolor=lightgoldenrodyellow];
+    set_processing_block [label="Set processingBlock = New Block", shape=box, style=filled, fillcolor=lightgrey];
+    gen_hash [label="Generate Block Hash", shape=box, style=filled, fillcolor=lightgrey];
+    record_hash [label="Record Hash Info\n(gotBlock, blockHashToID)", shape=box, style=filled, fillcolor=lightgrey];
+    create_event [label="Create BLOCK_CREATION HashEvent", shape=box, style="filled,rounded", fillcolor=lightgreen];
+    return_event [label="Return Event Vector", shape=box, style=filled, fillcolor=lightgreen];
+    return_empty;
+    end_node;
+
+    // Edges (Control Flow)
+    start_node -> check_processing;
+    check_processing -> return_empty [label="Yes"];
+    check_processing -> calc_delay_params [label="No"];
+
+    calc_delay_params -> create_coinbase;
+    create_coinbase -> init_block;
+    init_block -> select_validate_txns;
+    select_validate_txns -> set_processing_block;
+    set_processing_block -> gen_hash;
+    gen_hash -> record_hash;
+    record_hash -> create_event;
+    create_event -> return_event;
+
+    return_event -> end_node;
+    return_empty -> end_node;
+}

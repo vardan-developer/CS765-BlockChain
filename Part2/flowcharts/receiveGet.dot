@@ -1,0 +1,121 @@
+digraph receiveGetFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start receiveGet", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End", shape=ellipse, fillcolor=lightblue];
+    
+    // Initial check
+    check_miner_type [
+        label="What type of miner?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    // Normal Miner Logic
+    normal_miner [
+        label="Normal Miner Path",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    check_has_block_normal [
+        label="Have block for\nrequested hash?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    create_block_event_normal [
+        label="Create SEND_BLOCK event\non same network",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    // Malicious Miner Logic - Corrected Flow
+    malicious_miner [
+        label="Malicious Miner Path",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    check_network_type [
+        label="Request from\nmalicious network?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    check_ringmaster_block [
+        label="Is Ringmaster block?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    check_released [
+        label="Block released\nby Ringmaster?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    check_eclipse_attack [
+        label="Eclipse Attack\nActive?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    create_block_event_malicious [
+        label="Create SEND_BLOCK event",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    return_empty [
+        label="Return Empty Vector",
+        shape=box,
+        fillcolor=lightcoral
+    ];
+    
+    return_block_event [
+        label="Return Block Event Vector",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+
+    // Connect everything
+    start_node -> check_miner_type;
+    
+    // Normal Miner Path
+    check_miner_type -> normal_miner [label="Normal"];
+    normal_miner -> check_has_block_normal;
+    check_has_block_normal -> return_empty [label="No"];
+    check_has_block_normal -> create_block_event_normal [label="Yes"];
+    create_block_event_normal -> return_block_event;
+    
+    // Malicious Miner Path - Corrected Flow
+    check_miner_type -> malicious_miner [label="Malicious"];
+    malicious_miner -> check_network_type;
+    
+    // If from malicious network
+    check_network_type -> check_has_block_normal [label="Yes"];
+    
+    // If from normal network
+    check_network_type -> check_ringmaster_block [label="No"];
+    
+    // Ringmaster block check
+    check_ringmaster_block -> check_released [label="Yes"];
+    check_ringmaster_block -> check_eclipse_attack [label="No"];
+    
+    // Released check
+    check_released -> create_block_event_malicious [label="Yes"];
+    check_released -> return_empty [label="No"];
+    
+    // Eclipse attack check
+    check_eclipse_attack -> return_empty [label="Yes"];
+    check_eclipse_attack -> create_block_event_malicious [label="No"];
+    
+    create_block_event_malicious -> return_block_event;
+    
+    // Final returns
+    return_block_event -> end_node;
+    return_empty -> end_node;
+}

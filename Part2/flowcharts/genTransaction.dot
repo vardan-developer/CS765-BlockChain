@@ -1,0 +1,51 @@
+digraph genTransactionFlow {
+    rankdir=TB; // Top to bottom layout
+
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start genTransaction", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End", shape=ellipse, fillcolor=lightblue];
+    return_empty [label="Return Empty Vector", shape=box, fillcolor=lightcoral];
+    
+    // Nodes
+    start_node;
+    check_processing [label="processingTxnTime > currentTime?", shape=diamond, style=filled, fillcolor=khaki];
+    get_balance [label="Get Miner Balance", shape=box, style=filled, fillcolor=lightgrey];
+    check_balance [label="balance <= 0?", shape=diamond, style=filled, fillcolor=khaki];
+    gen_amount [label="Generate Random Amount", shape=box, style=filled, fillcolor=lightgrey];
+    check_amount [label="transactionAmount == 0?", shape=diamond, style=filled, fillcolor=khaki];
+    select_receiver [label="Select Random Receiver", shape=box, style=filled, fillcolor=lightgrey];
+    check_receiver [label="receiver == id?", shape=diamond, style=filled, fillcolor=khaki];
+    set_sender [label="Set Sender = id", shape=box, style=filled, fillcolor=lightgrey];
+    schedule_time [label="Calculate Scheduled Time", shape=box, style=filled, fillcolor=lightgrey];
+    set_processing [label="Set Processing State (ID, Time)", shape=box, style=filled, fillcolor=lightgrey];
+    create_txn [label="Create Transaction Object", shape=box, style=filled, fillcolor=lightgrey];
+    return_events [label="Return Event Vector", shape=box, style=filled, fillcolor=lightgreen];
+    return_empty;
+    end_node;
+
+    // Edges (Control Flow)
+    start_node -> check_processing;
+    check_processing -> return_empty [label="Yes"];
+    check_processing -> get_balance [label="No"];
+
+    get_balance -> check_balance;
+    check_balance -> return_empty [label="Yes"];
+    check_balance -> gen_amount [label="No"];
+
+    gen_amount -> check_amount;
+    check_amount -> return_empty [label="Yes"];
+    check_amount -> select_receiver [label="No"];
+
+    select_receiver -> check_receiver;
+    check_receiver -> select_receiver [label="Yes"]; // Loop back
+    check_receiver -> set_sender [label="No"];
+
+    set_sender -> schedule_time;
+    schedule_time -> set_processing;
+    set_processing -> create_txn;
+    create_txn -> return_events;
+
+    return_events -> end_node;
+    return_empty -> end_node;
+}

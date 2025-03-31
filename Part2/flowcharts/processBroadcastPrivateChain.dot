@@ -1,0 +1,78 @@
+digraph processBroadcastPrivateChainFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start processBroadcastPrivateChain", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End processBroadcastPrivateChain", shape=ellipse, fillcolor=lightblue];
+    
+    // Decision diamond
+    check_receiver [
+        label="receiver < 0?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    // Broadcast to all malicious neighbors
+    get_malicious_neighbors [
+        label="Get neighbors from\nmalicious network",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    iterate_neighbors [
+        label="For each malicious neighbor",
+        shape=box,
+        style="filled,rounded",
+        fillcolor=lightgrey
+    ];
+    
+    skip_self [
+        label="Skip if neighbor == sender",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    calculate_latency [
+        label="Calculate latency in\nmalicious network",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    create_broadcast_event [
+        label="Create BROADCAST_PRIVATE_CHAIN event\nwith calculated delay",
+        shape=box,
+        fillcolor=red
+    ];
+    
+    // Direct handling
+    call_malicious_miner [
+        label="Call MaliciousMiner's\nreceiveBroadcastPrivateChain()",
+        shape=box,
+        fillcolor=red
+    ];
+    
+    add_new_events [
+        label="Add returned events to\nsimulation event queue",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    // Connect nodes
+    start_node -> check_receiver;
+    
+    // Broadcast path
+    check_receiver -> get_malicious_neighbors [label="Yes"];
+    get_malicious_neighbors -> iterate_neighbors;
+    iterate_neighbors -> skip_self;
+    skip_self -> iterate_neighbors [label="Yes"];
+    skip_self -> calculate_latency [label="No"];
+    calculate_latency -> create_broadcast_event;
+    create_broadcast_event -> iterate_neighbors;
+    iterate_neighbors -> end_node [label="Done"];
+    
+    // Direct handling path
+    check_receiver -> call_malicious_miner [label="No"];
+    call_malicious_miner -> add_new_events;
+    add_new_events -> end_node;
+} 

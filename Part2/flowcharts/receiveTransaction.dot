@@ -1,0 +1,51 @@
+digraph receiveTransactionsFlow {
+    rankdir=TB; // Top to bottom layout
+
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start receiveTransactions", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End", shape=ellipse, fillcolor=lightblue];
+    return_empty [label="Return Empty Vector", shape=box, fillcolor=lightcoral];
+    loop_node [shape=cds, style=filled, fillcolor=lightsteelblue]; // Cylinder for loop construct
+
+    // Nodes
+    start_node;
+    check_duplicate [label="Transaction already seen?", shape=diamond, style=filled, fillcolor=khaki];
+    add_to_mempool [label="Add Transaction to MemPool", shape=box, style=filled, fillcolor=lightgrey];
+    record_sender [label="Record Sender\n(in txnToMiner)", shape=box, style=filled, fillcolor=lightgrey];
+    get_neighbors [label="Get Neighbors", shape=box, style=filled, fillcolor=lightgrey];
+    loop_neighbors [label="For each Neighbor", shape=cds, style=filled, fillcolor=lightsteelblue];
+    check_neighbor_received [label="Neighbor already received Txn?", shape=diamond, style=filled, fillcolor=khaki];
+    mark_neighbor [label="Mark Neighbor as Received\n(in txnToMiner)", shape=box, style=filled, fillcolor=lightgrey];
+    create_normal_event [label="Create Normal Forwarding Event\n(for Neighbor)", shape=box, style=filled, fillcolor=lightgreen];
+    check_malicious_flag [label="malicious flag set?", shape=diamond, style=filled, fillcolor=khaki];
+    create_malicious_event [label="Create Malicious Forwarding Event\n(for Neighbor)", shape=box, style=filled, fillcolor=orange];
+    return_new_events [label="Return New Events", shape=box, style=filled, fillcolor=lightgreen];
+    return_empty;
+    end_node;
+
+    // Edges (Control Flow)
+    start_node -> check_duplicate;
+    check_duplicate -> return_empty [label="Yes"];
+    check_duplicate -> add_to_mempool [label="No"];
+
+    add_to_mempool -> record_sender;
+    record_sender -> get_neighbors;
+    get_neighbors -> loop_neighbors;
+
+    loop_neighbors -> check_neighbor_received [label="Iterate"];
+    check_neighbor_received -> loop_neighbors [label="Yes (Next Neighbor)"]; // Skip if neighbor already received
+    check_neighbor_received -> mark_neighbor [label="No"];
+
+    mark_neighbor -> create_normal_event;
+    create_normal_event -> check_malicious_flag;
+
+    check_malicious_flag -> create_malicious_event [label="Yes"];
+    create_malicious_event -> loop_neighbors [label="Continue Loop"]; // Back to loop after creating malicious event
+    check_malicious_flag -> loop_neighbors [label="No (Continue Loop)"]; // Back to loop if not malicious
+
+    loop_neighbors -> return_new_events [label="Done"]; // After iterating through all neighbors
+
+    return_new_events -> end_node;
+    return_empty -> end_node;
+}

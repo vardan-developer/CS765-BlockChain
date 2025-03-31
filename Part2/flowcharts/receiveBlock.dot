@@ -1,0 +1,89 @@
+digraph receiveBlockFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start receiveBlock", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End", shape=ellipse, fillcolor=lightblue];
+
+    // Initial ringmaster check
+    check_ringmaster [
+        label="Is Ringmaster?\nAND\nBlock owner != Ringmaster",
+        shape=diamond,
+        fillcolor=purple1
+    ];
+
+    // Ringmaster specific nodes
+    call_main_receive [
+        label="Call Miner::receiveBlock\n(with malicious=true)",
+        shape=box,
+        fillcolor=purple1
+    ];
+
+    check_private_broadcast [
+        label="Check and broadcast\nprivate chain if \nnecessary",
+        shape=box,
+        fillcolor=purple1
+    ];
+
+    combine_events [
+        label="Combine events from both\noperations",
+        shape=box,
+        fillcolor=purple1
+    ];
+
+    // Main flow nodes
+    normal_flow [label="Normal Miner Flow", shape=box, style="filled,rounded", fillcolor=lightgrey];
+    check_duplicate [label="Block already received?", shape=diamond, fillcolor=khaki];
+    check_hash [label="Have block hash?", shape=diamond, fillcolor=khaki];
+    setup_hash_tracking [label="Setup hash tracking\n(gotBlock, timeout, blockHashToID)", shape=box, fillcolor=lightgrey];
+    validate_add_block [label="Validate and add block\nto blockchain", shape=diamond, fillcolor=khaki];
+    
+    process_cached [label="Process cached child blocks\nand add if valid", shape=box, fillcolor=lightsteelblue];
+    check_chain_switch [label="Chain switched?", shape=diamond, fillcolor=khaki];
+    reset_processing [label="Reset processing block", shape=box, fillcolor=lightgrey];
+    gen_new_block [label="Generate new block", shape=box, fillcolor=lightgreen];
+    
+    broadcast_decision [label="Check broadcast conditions:\n1. Honest miner OR\n2. Not ringmaster block OR\n3. Released by ringmaster", shape=diamond, fillcolor=khaki];
+    broadcast_hash [label="Broadcast block hash\nto neighbors", shape=box, fillcolor=lightgreen];
+    
+    return_empty [label="Return empty events", shape=box, fillcolor=lightcoral];
+    return_events [label="Return new events", shape=box, fillcolor=lightgreen];
+    end_node;
+
+    // Edges
+    start_node -> check_ringmaster;
+    
+    // Ringmaster path
+    check_ringmaster -> call_main_receive [label="Yes"];
+    call_main_receive -> check_private_broadcast;
+    check_private_broadcast -> combine_events;
+    combine_events -> return_events;
+    
+    // Normal path
+    check_ringmaster -> normal_flow [label="No"];
+    normal_flow -> check_duplicate;
+    check_duplicate -> return_empty [label="Yes"];
+    check_duplicate -> check_hash [label="No"];
+    
+    check_hash -> return_empty [label="No"];
+    check_hash -> setup_hash_tracking [label="Yes"];
+    
+    setup_hash_tracking -> validate_add_block;
+    validate_add_block -> return_empty [label="Invalid"];
+    validate_add_block -> process_cached [label="Valid"];
+    
+    process_cached -> check_chain_switch;
+    check_chain_switch -> broadcast_decision [label="No"];
+    check_chain_switch -> reset_processing [label="Yes"];
+    
+    reset_processing -> gen_new_block;
+    gen_new_block -> broadcast_decision;
+    
+    broadcast_decision -> broadcast_hash [label="Yes"];
+    broadcast_decision -> return_events [label="No"];
+    
+    broadcast_hash -> return_events;
+    return_events -> end_node;
+    return_empty -> end_node;
+}

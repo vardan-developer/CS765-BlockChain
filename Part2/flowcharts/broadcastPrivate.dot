@@ -1,0 +1,77 @@
+digraph checkAndBroadcastPrivateFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start checkAndBroadcastPrivate", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End", shape=ellipse, fillcolor=lightblue];
+    
+    // Main decision points
+    check_private_exists [
+        label="Private chain exists?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    compare_lengths [
+        label="Compare honest and\nprivate chain lengths",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    check_panic [
+        label="Difference ≤ 1?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    // Actions
+    broadcast_private [
+        label="Broadcast private chain\nto network",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    reset_private [
+        label="Abandon private chain",
+        shape=box,
+        fillcolor=lightcoral
+    ];
+    
+    return_empty [
+        label="Return no events",
+        shape=box,
+        fillcolor=lightcoral
+    ];
+    
+    return_events [
+        label="Return broadcast events",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+
+    // Edges
+    start_node -> check_private_exists;
+    
+    // No private chain
+    check_private_exists -> return_empty [label="No"];
+    
+    // Main flow
+    check_private_exists -> compare_lengths [label="Yes"];
+    
+    // Honest chain longer
+    compare_lengths -> reset_private [label="Honest longer"];
+    reset_private -> return_empty;
+    
+    // Private chain competitive
+    compare_lengths -> check_panic [label="Private longer/equal"];
+    
+    // Broadcast decision
+    check_panic -> return_empty [label="No"];
+    check_panic -> broadcast_private [label="Yes"];
+    broadcast_private -> return_events;
+    
+    // Final returns
+    return_empty -> end_node;
+    return_events -> end_node;
+}

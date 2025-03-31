@@ -1,0 +1,78 @@
+digraph processSendGetFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start processSendGetEvent", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End processSendGetEvent", shape=ellipse, fillcolor=lightblue];
+    
+    // Decision diamond
+    check_receiver [
+        label="receiver < 0?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    // Broadcast to all neighbors
+    get_neighbors [
+        label="Get neighbors from\nappropriate network",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    iterate_neighbors [
+        label="For each neighbor",
+        shape=box,
+        style="filled,rounded",
+        fillcolor=lightgrey
+    ];
+    
+    skip_self [
+        label="Skip if neighbor == sender",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    calculate_latency_broadcast [
+        label="Calculate latency based on\nnetwork type",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    create_receive_event_broadcast [
+        label="Create RECEIVE_GET event\nwith calculated delay",
+        shape=box,
+        fillcolor=yellow
+    ];
+    
+    // Send to specific receiver
+    calculate_latency_direct [
+        label="Calculate latency based on\nnetwork type",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    create_receive_event_direct [
+        label="Create RECEIVE_GET event\nwith calculated delay",
+        shape=box,
+        fillcolor=yellow
+    ];
+    
+    // Connect nodes
+    start_node -> check_receiver;
+    
+    // Broadcast path
+    check_receiver -> get_neighbors [label="Yes"];
+    get_neighbors -> iterate_neighbors;
+    iterate_neighbors -> skip_self;
+    skip_self -> iterate_neighbors [label="Yes"];
+    skip_self -> calculate_latency_broadcast [label="No"];
+    calculate_latency_broadcast -> create_receive_event_broadcast;
+    create_receive_event_broadcast -> iterate_neighbors;
+    iterate_neighbors -> end_node [label="Done"];
+    
+    // Direct send path
+    check_receiver -> calculate_latency_direct [label="No"];
+    calculate_latency_direct -> create_receive_event_direct;
+    create_receive_event_direct -> end_node;
+}

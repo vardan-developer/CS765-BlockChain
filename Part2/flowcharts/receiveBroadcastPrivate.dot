@@ -1,0 +1,73 @@
+digraph receiveBroadcastPrivateChainFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start receiveBroadcastPrivateChain", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End", shape=ellipse, fillcolor=lightblue];
+    
+    // Main decision point
+    check_seen [
+        label="Already seen this\nprivate chain broadcast?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    // Main actions
+    notify_malicious [
+        label="Notify other\nmalicious miners",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    process_chain [
+        label="Process private chain blocks\nand update last released block",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    broadcast_honest [
+        label="Broadcast block hashes\nto honest network",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    return_empty [
+        label="Return no events",
+        shape=box,
+        fillcolor=lightcoral
+    ];
+    
+    return_events [
+        label="Return broadcast events",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+
+    // Subgraph for main processing
+    subgraph cluster_process {
+        label = "Private Chain Release Process";
+        style = filled;
+        color = lightgrey;
+        
+        notify_malicious;
+        process_chain;
+        broadcast_honest;
+    }
+
+    // Edges
+    start_node -> check_seen;
+    
+    // Already seen path
+    check_seen -> return_empty [label="Yes"];
+    
+    // Main processing path
+    check_seen -> notify_malicious [label="No"];
+    notify_malicious -> process_chain;
+    process_chain -> broadcast_honest;
+    broadcast_honest -> return_events;
+    
+    // Final returns
+    return_empty -> end_node;
+    return_events -> end_node;
+}

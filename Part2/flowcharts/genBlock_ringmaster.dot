@@ -1,0 +1,92 @@
+digraph ringmasterGenBlockFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start Ringmaster genBlock", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End", shape=ellipse, fillcolor=lightblue];
+    
+    // Initial check
+    check_processing [
+        label="Already processing\na block?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    check_branch_exists [
+        label="Have private chain?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    // Private chain initialization
+    setup_branch_point [
+        label="Set current honest chain tip\nas branch point",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    init_private_chain [
+        label="Initialize new private chain\nfrom branch point",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    // Block creation on private chain
+    create_block [
+        label="Create new block on private chain:\n• Calculate PoW delay\n• Set parent and height\n• Add transactions",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    // Final steps
+    set_processing [
+        label="Set as processing block",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    create_hash_event [
+        label="Create block creation event\n(malicious network only)",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    return_empty [
+        label="Return no events",
+        shape=box,
+        fillcolor=lightcoral
+    ];
+    
+    return_event [
+        label="Return hash event",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+
+    // Edges
+    start_node -> check_processing;
+    
+    // Already processing path
+    check_processing -> return_empty [label="Yes"];
+    
+    // Main flow
+    check_processing -> check_branch_exists [label="No"];
+    
+    // No private chain path - need to initialize
+    check_branch_exists -> setup_branch_point [label="No"];
+    setup_branch_point -> init_private_chain;
+    init_private_chain -> create_block;
+    
+    // Private chain exists path
+    check_branch_exists -> create_block [label="Yes"];
+    
+    // Final steps
+    create_block -> set_processing;
+    set_processing -> create_hash_event;
+    create_hash_event -> return_event;
+    
+    // Final returns
+    return_empty -> end_node;
+    return_event -> end_node;
+}

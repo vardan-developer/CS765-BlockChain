@@ -1,0 +1,80 @@
+digraph receiveHashFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start receiveHash", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End", shape=ellipse, fillcolor=lightblue];
+
+    // Nodes
+    start_node;
+    check_hash_exists [
+        label="Already have\nthis block hash?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    check_duplicate_sender [
+        label="Same hash from same sender\non same network?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    record_sender [
+        label="Record sender and network type\nin blockHashToMinerSet\nand blockHashToMiners queue",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    check_timeout [
+        label="Current time >\ntimeout for this hash?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    update_timeout [
+        label="Update timeout and\nrotate queue of senders",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    create_get_event [
+        label="Create GET_EVENT\nfor block request",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    return_empty [
+        label="Return Empty Vector",
+        shape=box,
+        fillcolor=lightcoral
+    ];
+    
+    return_get_event [
+        label="Return GetEvent Vector",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    end_node;
+
+    // Edges
+    start_node -> check_hash_exists;
+    
+    check_hash_exists -> return_empty [label="Yes"];
+    check_hash_exists -> check_duplicate_sender [label="No"];
+    
+    check_duplicate_sender -> return_empty [label="Yes"];
+    check_duplicate_sender -> record_sender [label="No"];
+    
+    record_sender -> check_timeout;
+    
+    check_timeout -> return_empty [label="No"];
+    check_timeout -> update_timeout [label="Yes"];
+    
+    update_timeout -> create_get_event;
+    create_get_event -> return_get_event;
+    
+    return_get_event -> end_node;
+    return_empty -> end_node;
+}

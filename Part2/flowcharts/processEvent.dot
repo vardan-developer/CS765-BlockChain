@@ -1,0 +1,109 @@
+digraph processEventFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start processEvent", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End processEvent", shape=ellipse, fillcolor=lightblue];
+    
+    // Main event type decision diamond
+    event_type_check [
+        label="Check Event Type",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    // Event handlers
+    process_send_hash [
+        label="processSendHashEvent",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    process_receive_hash [
+        label="processReceiveHashEvent",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    process_send_block [
+        label="processSendBlockEvent",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    process_receive_block [
+        label="processReceiveBlockEvent",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    process_send_transaction [
+        label="processSendTransactionEvent",
+        shape=box,
+        fillcolor=purple1
+    ];
+    
+    process_receive_transaction [
+        label="processReceiveTransactionEvent",
+        shape=box,
+        fillcolor=purple1
+    ];
+    
+    process_send_get [
+        label="processSendGetEvent",
+        shape=box,
+        fillcolor=yellow
+    ];
+    
+    process_receive_get [
+        label="processReceiveGetEvent",
+        shape=box,
+        fillcolor=yellow
+    ];
+    
+    process_broadcast_private [
+        label="processBroadcastPrivateChain",
+        shape=box,
+        fillcolor=red
+    ];
+    
+    process_block_creation [
+        label="processBlockCreation",
+        shape=box,
+        fillcolor=cyan
+    ];
+    
+    unknown_event [
+        label="Log Unknown Event Error",
+        shape=box,
+        fillcolor=lightcoral
+    ];
+
+    // Connect nodes
+    start_node -> event_type_check;
+    
+    event_type_check -> process_send_hash [label="SEND_HASH"];
+    event_type_check -> process_receive_hash [label="RECEIVE_HASH"];
+    event_type_check -> process_send_block [label="SEND_BLOCK"];
+    event_type_check -> process_receive_block [label="RECEIVE_BLOCK"];
+    event_type_check -> process_send_transaction [label="SEND_TRANSACTION"];
+    event_type_check -> process_receive_transaction [label="RECEIVE_TRANSACTION"];
+    event_type_check -> process_send_get [label="SEND_GET"];
+    event_type_check -> process_receive_get [label="RECEIVE_GET"];
+    event_type_check -> process_broadcast_private [label="BROADCAST_PRIVATE_CHAIN"];
+    event_type_check -> process_block_creation [label="BLOCK_CREATION"];
+    event_type_check -> unknown_event [label="default"];
+    
+    process_send_hash -> end_node;
+    process_receive_hash -> end_node;
+    process_send_block -> end_node;
+    process_receive_block -> end_node;
+    process_send_transaction -> end_node;
+    process_receive_transaction -> end_node;
+    process_send_get -> end_node;
+    process_receive_get -> end_node;
+    process_broadcast_private -> end_node;
+    process_block_creation -> end_node;
+    unknown_event -> end_node;
+} 

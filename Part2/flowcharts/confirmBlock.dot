@@ -1,0 +1,117 @@
+digraph confirmBlockFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start confirmBlock", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End", shape=ellipse, fillcolor=lightblue];
+    
+    // Initial miner type check
+    check_miner_type [
+        label="What type of miner?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    // Ringmaster specific path
+    ringmaster_path [
+        label="Ringmaster Path",
+        shape=box,
+        fillcolor=purple1
+    ];
+    
+    add_to_malicious_chain [
+        label="Add block to\nmalicious chain",
+        shape=box,
+        fillcolor=purple1
+    ];
+    
+    return_true_ringmaster [
+        label="Return true",
+        shape=box,
+        fillcolor=purple1
+    ];
+    
+    // Normal/Malicious miner path
+    normal_path [
+        label="Normal/Malicious Path",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    check_processing_hash [
+        label="Hash matches\nprocessing block?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    increment_blocks [
+        label="Increment\ntotalBlocksGenerated",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    add_block [
+        label="Add block to\nblockchain tree",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    switch_chain [
+        label="Switch to\nlongest chain",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    reset_processing [
+        label="Reset processing\nblock to empty",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    remove_hash [
+        label="Remove hash from\nblockHashToID",
+        shape=box,
+        fillcolor=lightcoral
+    ];
+    
+    return_true [
+        label="Return true",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    return_false [
+        label="Return false",
+        shape=box,
+        fillcolor=lightcoral
+    ];
+
+    // Edges
+    start_node -> check_miner_type;
+    
+    // Ringmaster path
+    check_miner_type -> ringmaster_path [label="Ringmaster"];
+    ringmaster_path -> add_to_malicious_chain;
+    add_to_malicious_chain -> return_true_ringmaster;
+    return_true_ringmaster -> end_node;
+    
+    // Normal/Malicious path
+    check_miner_type -> normal_path [label="Normal/\nMalicious"];
+    normal_path -> check_processing_hash;
+    
+    // Success path
+    check_processing_hash -> increment_blocks [label="Yes"];
+    increment_blocks -> add_block;
+    add_block -> switch_chain;
+    switch_chain -> reset_processing;
+    reset_processing -> return_true;
+    
+    // Failure path
+    check_processing_hash -> remove_hash [label="No"];
+    remove_hash -> return_false;
+    
+    // Final returns
+    return_true -> end_node;
+    return_false -> end_node;
+}

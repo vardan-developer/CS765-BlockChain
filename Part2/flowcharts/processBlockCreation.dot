@@ -1,0 +1,69 @@
+digraph processBlockCreationFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start processBlockCreation", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End processBlockCreation", shape=ellipse, fillcolor=lightblue];
+    
+    // Confirm block
+    call_confirm_block [
+        label="Call miners[owner].confirmBlock()",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    check_confirm_result [
+        label="Block confirmed?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    // Broadcast if confirmed
+    get_neighbors [
+        label="Get neighbors from\nappropriate network",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    iterate_neighbors [
+        label="For each neighbor",
+        shape=box,
+        style="filled,rounded",
+        fillcolor=lightgrey
+    ];
+    
+    skip_self [
+        label="Skip if neighbor == sender",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    calculate_latency [
+        label="Calculate latency based\non network type",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    create_send_hash_event [
+        label="Create SEND_HASH event\nwith calculated delay",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    // Connect nodes
+    start_node -> call_confirm_block;
+    call_confirm_block -> check_confirm_result;
+    
+    // If block confirmed, broadcast hash
+    check_confirm_result -> get_neighbors [label="Yes"];
+    check_confirm_result -> end_node [label="No"];
+    
+    get_neighbors -> iterate_neighbors;
+    iterate_neighbors -> skip_self;
+    skip_self -> iterate_neighbors [label="Yes"];
+    skip_self -> calculate_latency [label="No"];
+    calculate_latency -> create_send_hash_event;
+    create_send_hash_event -> iterate_neighbors;
+    iterate_neighbors -> end_node [label="Done"];
+} 

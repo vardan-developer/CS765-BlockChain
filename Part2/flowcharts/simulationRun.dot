@@ -1,0 +1,102 @@
+digraph simulationRunFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start Simulation", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End Simulation", shape=ellipse, fillcolor=lightblue];
+    
+    // Main simulation loop
+    main_loop [
+        label="Main Simulation Loop",
+        shape=box,
+        style="filled,rounded,dashed",
+        fillcolor=lightsteelblue
+    ];
+    
+    get_events [
+        label="Collect events from all miners",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    check_events_empty [
+        label="Events queue empty?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    pop_event [
+        label="Get next event from queue",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    process_event [
+        label="Call processEvent()",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    check_time_limit [
+        label="Time limit reached?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    check_block_limit [
+        label="Block count reached?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    // Final broadcast
+    force_broadcast_private [
+        label="Force RingMaster to broadcast\nprivate chain",
+        shape=box,
+        fillcolor=red
+    ];
+    
+    set_no_gen_block [
+        label="Set do_gen_block = false",
+        shape=box,
+        fillcolor=lightgrey
+    ];
+    
+    // Cleanup loop
+    cleanup_loop [
+        label="Process remaining events",
+        shape=box,
+        style="filled,rounded,dashed",
+        fillcolor=lightsteelblue
+    ];
+    
+    check_events_empty_cleanup [
+        label="Events queue empty?",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    // Connect nodes
+    start_node -> main_loop;
+    
+    // Main loop
+    main_loop -> get_events;
+    get_events -> check_events_empty;
+    check_events_empty -> main_loop [label="Yes"];
+    check_events_empty -> pop_event [label="No"];
+    pop_event -> process_event;
+    process_event -> check_time_limit;
+    check_time_limit -> force_broadcast_private [label="Yes"];
+    check_time_limit -> check_block_limit [label="No"];
+    check_block_limit -> force_broadcast_private [label="Yes"];
+    check_block_limit -> main_loop [label="No"];
+    
+    // Cleanup phase
+    force_broadcast_private -> set_no_gen_block;
+    set_no_gen_block -> cleanup_loop;
+    
+    cleanup_loop -> check_events_empty_cleanup;
+    check_events_empty_cleanup -> end_node [label="Yes"];
+    check_events_empty_cleanup -> get_events [label="No"];
+} 

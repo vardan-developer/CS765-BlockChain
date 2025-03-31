@@ -1,0 +1,75 @@
+digraph processEventFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start processEvent", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End", shape=ellipse, fillcolor=lightblue];
+    
+    // Event type check
+    event_type_check [
+        label="Check Event Type",
+        shape=diamond,
+        fillcolor=khaki
+    ];
+    
+    // Transaction Events
+    process_transaction [
+        label="Process Transaction Event:\n• SEND_TRANSACTION → genTransaction()\n• RECEIVE_TRANSACTION → receiveTransactions()",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    // Block Events
+    process_block [
+        label="Process Block Event:\n• SEND_BLOCK → genBlock()\n• RECEIVE_BLOCK → receiveBlock()",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    // Hash Events
+    process_hash [
+        label="Process Hash Event:\n• BLOCK_CREATION → confirmBlock()\n• SEND_HASH → receiveHash()\n• RECEIVE_HASH → receiveHash()",
+        shape=box,
+        fillcolor=purple1
+    ];
+    
+    // Get Events
+    process_get [
+        label="Process Get Event:\n• SEND_GET → receiveGet()\n• RECEIVE_GET → receiveGet()",
+        shape=box,
+        fillcolor=yellow
+    ];
+    
+    // Private Chain Events
+    process_private [
+        label="Process Private Chain Event:\n• BROADCAST_PRIVATE_CHAIN →\nreceiveBroadcastPrivateChain()",
+        shape=box,
+        fillcolor=red
+    ];
+    
+    return_events [
+        label="Return Generated Events",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+
+    // Edges
+    start_node -> event_type_check;
+    
+    // Route based on event type
+    event_type_check -> process_transaction [label="Transaction\nEvents"];
+    event_type_check -> process_block [label="Block\nEvents"];
+    event_type_check -> process_hash [label="Hash\nEvents"];
+    event_type_check -> process_get [label="Get\nEvents"];
+    event_type_check -> process_private [label="Private Chain\nEvents"];
+    
+    // All processes return to final step
+    process_transaction -> return_events;
+    process_block -> return_events;
+    process_hash -> return_events;
+    process_get -> return_events;
+    process_private -> return_events;
+    
+    return_events -> end_node;
+}

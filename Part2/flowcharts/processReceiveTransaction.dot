@@ -1,0 +1,26 @@
+digraph processReceiveTransactionFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start processReceiveTransactionEvent", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End processReceiveTransactionEvent", shape=ellipse, fillcolor=lightblue];
+    
+    // Simple flowchart since it's a wrapper
+    call_miner_receive_transaction [
+        label="Call miners[receiver].receiveTransactions()",
+        shape=box,
+        fillcolor=purple1
+    ];
+    
+    add_new_events [
+        label="Add returned events to\nsimulation event queue",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    // Connect nodes
+    start_node -> call_miner_receive_transaction;
+    call_miner_receive_transaction -> add_new_events;
+    add_new_events -> end_node;
+} 

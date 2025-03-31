@@ -1,0 +1,26 @@
+digraph processReceiveBlockFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start processReceiveBlockEvent", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End processReceiveBlockEvent", shape=ellipse, fillcolor=lightblue];
+    
+    // Simple flowchart since it's a wrapper
+    call_miner_receive_block [
+        label="Call miners[receiver].receiveBlock()\nwith do_gen_block flag",
+        shape=box,
+        fillcolor=orange
+    ];
+    
+    add_new_events [
+        label="Add returned events to\nsimulation event queue",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    // Connect nodes
+    start_node -> call_miner_receive_block;
+    call_miner_receive_block -> add_new_events;
+    add_new_events -> end_node;
+} 

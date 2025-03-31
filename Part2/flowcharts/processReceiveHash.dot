@@ -1,0 +1,26 @@
+digraph processReceiveHashFlow {
+    rankdir=TB;
+    
+    // Node styles
+    node [shape=box, style="filled,rounded", fontname="Helvetica"];
+    start_node [label="Start processReceiveHashEvent", shape=ellipse, fillcolor=lightblue];
+    end_node [label="End processReceiveHashEvent", shape=ellipse, fillcolor=lightblue];
+    
+    // Simple flowchart since it's a wrapper
+    call_miner_receive_hash [
+        label="Call miners[receiver].receiveHash()\nto handle the event",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    add_new_events [
+        label="Add returned events to\nsimulation event queue",
+        shape=box,
+        fillcolor=lightgreen
+    ];
+    
+    // Connect nodes
+    start_node -> call_miner_receive_hash;
+    call_miner_receive_hash -> add_new_events;
+    add_new_events -> end_node;
+} 
