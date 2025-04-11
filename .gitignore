@@ -2,12 +2,12 @@
 a.out
 part1/scratch/
 *.dot
+*.png
 *.o
 *.logs
 <<<<<<< HEAD
 sim
 miners.txt
-*.png
 =======
 logs/
 logs/*
