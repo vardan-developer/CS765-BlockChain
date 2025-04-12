@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MyToken is ERC20 {
     uint constant _total_supply = 100*(10**18);
-    constructor() ERC20("TokenA", "TKA") {
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
         _mint(msg.sender, _total_supply);
     }
 }
