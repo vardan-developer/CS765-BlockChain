@@ -12,8 +12,8 @@ interface IERC20 {
 
 interface LPTok {
     function balanceOf(address account) external view returns (uint256);
-    function generateTokens(uint _amount, address receiver) external  returns (bool success, uint);
-    function burn(uint _amount, address owner) external returns (bool success, uint);
+    function generateTokens(uint256 _amount, address receiver) external  returns (bool success, uint256);
+    function burn(uint256 _amount, address owner) external returns (bool success, uint256);
     function getTotalTokens() external  view returns (uint256);
 }
 
@@ -35,7 +35,11 @@ contract DEX {
         owner = msg.sender;
     }
 
-    function getGCD(uint a, uint b) internal pure returns (uint) {
+    event Log(string message);
+    event LogInt(uint value);
+    event LogAddress(address addr);
+
+    function getGCD(uint256 a, uint256 b) internal pure returns (uint256) {
         if (b == 0) {
             return a;
         }
@@ -70,8 +74,12 @@ contract DEX {
     function _transferToken(address _token, address sender, address receiver,uint256 amount) internal {
         IERC20(_token).transferFrom(sender, receiver, amount);
     }
+    
+    function isRatioClose(uint256 amt1, uint256 amt2) internal view returns (bool) {
+        return (amt1 * getTokenBBalance()) / getTokenABalance() == amt2;
+    }
 
-    function depositTokens(uint amt1, uint amt2) public {
+    function depositTokens(uint256 amt1, uint256 amt2) public {
         if (amt1 == 0 || amt2 == 0) {
             return;
         }
@@ -82,51 +90,47 @@ contract DEX {
         if(tokenABalance == 0 && tokenBBalance == 0){
             reserve1 = amt1;
             reserve2 = amt2;
-        }
-
-        if(amt1*reserve2 != amt2*reserve1) {
+        } else if(!isRatioClose(amt1, amt2)) {
             return;
         }
 
-        uint LPTokensReward = (tokenABalance == 0) ? 10**18 :  amt1 * 10**18 / tokenABalance;
+        uint256 LPTokensReward = (tokenABalance == 0) ? 10**18 :  (amt1 * 10**18) / tokenABalance;
         LPTok(LPTokens).generateTokens(LPTokensReward, sender);
         _transferToken(tokenA, sender, address(this), amt1);
         _transferToken(tokenB, sender, address(this), amt2);
     }
 
-    function withdrawTokens(uint256 LPAmt) public returns(uint, uint) {
+    function withdrawTokens(uint256 LPAmt) public returns(uint256, uint256) {
         address sender = msg.sender;
         bool success = false;
-        uint balance = 0;
-        uint totalTokens = LPTok(LPTokens).getTotalTokens();
+        uint256 balance = 0;
+        uint256 totalTokens = LPTok(LPTokens).getTotalTokens();
         (success, balance) = LPTok(LPTokens).burn(LPAmt, sender);
         if (success) {
-            uint balanceA = getTokenABalance();
-            uint balanceB = getTokenBBalance();
-            // _transferToken(tokenA, address(this), sender,balanceA*LPAmt/totalTokens);
-            // _transferToken(tokenB, address(this), sender,balanceB*LPAmt/totalTokens);
-            IERC20(tokenA).transfer(sender, balanceA*LPAmt/totalTokens);
-            IERC20(tokenB).transfer(sender, balanceB*LPAmt/totalTokens);
-            return (balanceA*LPAmt/totalTokens, balanceB*LPAmt/totalTokens);
+            uint256 balanceA = getTokenABalance();
+            uint256 balanceB = getTokenBBalance();
+            IERC20(tokenA).transfer(sender, (balanceA*LPAmt)/totalTokens);
+            IERC20(tokenB).transfer(sender, (balanceB*LPAmt)/totalTokens);
+            return ((balanceA*LPAmt)/totalTokens, (balanceB*LPAmt)/totalTokens);
         }
         return (0,0);
     }
 
-    function swap(string memory token , uint amount) public {
+    function swap(string memory token , uint256 amount) public {
         address sender = msg.sender;
-        uint newTransferAmount = (amount * 97)/100;
+        uint256 newTransferAmount = (amount * 97)/100;
         if ( keccak256(abi.encodePacked(token)) == keccak256(abi.encodePacked("TokenA")) ) {
-            uint newAmountA = getTokenABalance() + newTransferAmount;
-            uint newAmountB = (getTokenABalance() * getTokenBBalance()) / newAmountA;
-            uint transferAmountB = getTokenBBalance() - newAmountB;
+            uint256 newAmountA = getTokenABalance() + newTransferAmount;
+            uint256 newAmountB = (getTokenABalance() * getTokenBBalance()) / newAmountA;
+            uint256 transferAmountB = getTokenBBalance() - newAmountB;
             reserve1 = newAmountA;
             reserve2 = newAmountB;
             IERC20(tokenA).transferFrom(sender, address(this), amount);
             IERC20(tokenB).transfer(sender, transferAmountB);
         } else if ( keccak256(abi.encodePacked(token)) == keccak256(abi.encodePacked("TokenB")) ) {
-            uint newAmountB = getTokenBBalance() + newTransferAmount;
-            uint newAmountA = (getTokenABalance() * getTokenBBalance()) / newAmountB;
-            uint transferAmountA = getTokenABalance() - newAmountA;
+            uint256 newAmountB = getTokenBBalance() + newTransferAmount;
+            uint256 newAmountA = (getTokenABalance() * getTokenBBalance()) / newAmountB;
+            uint256 transferAmountA = getTokenABalance() - newAmountA;
             reserve1 = newAmountA;
             reserve2 = newAmountB;
             IERC20(tokenA).transfer(sender, transferAmountA);
