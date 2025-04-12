@@ -1,5 +1,10 @@
 const { ethers } = require("hardhat");
 
+var tokenATradingVolume = 0;
+var tokenBTradingVolume = 0;
+var tokenAFeeCollected = 0;
+var tokenBFeeCollected = 0;
+
 const deposit = async (LP, dexInterface, tokenAInterface, tokenBInterface, amountA, amountB, lpTokenInterface) => {
     await tokenAInterface.methods.approve(dexInterface.options.address, amountA).send({from : LP});
     await tokenBInterface.methods.approve(dexInterface.options.address, amountB).send({from : LP});
@@ -10,10 +15,14 @@ const deposit = async (LP, dexInterface, tokenAInterface, tokenBInterface, amoun
 
 const swap = async (user, dexInterface, tokenAInterface, tokenBInterface, amountIn, tokenIn) => {
     if (tokenIn === 0) {
+        tokenATradingVolume += amountIn;
+        tokenAFeeCollected += (amountIn * 3) / 100;
         await tokenAInterface.methods.approve(dexInterface.options.address, amountIn).send({from : user});
         await dexInterface.methods.swap("TokenA", amountIn).send({from : user});
         console.log("Swap " + "user:" + user + ", TokenA amountIn:" + amountIn);
     } else {
+        tokenBTradingVolume += amountIn;
+        tokenBFeeCollected += (amountIn * 3) / 100;
         await tokenBInterface.methods.approve(dexInterface.options.address, amountIn).send({from : user});
         await dexInterface.methods.swap("TokenB", amountIn).send({from : user});
         console.log("Swap " + "user:" + user + ", TokenB amountIn:" + amountIn);
@@ -100,6 +109,7 @@ const analyze =  async() => {
         const operationTypes = {"swap": 0, "deposit": 1, "withdraw": 2};
 
         for (let i = 0; i < N; i++) {
+            let slippage = null;
             const operationType = Math.floor(Math.random() * 3);
             
             if (operationType === operationTypes.swap) {
@@ -111,13 +121,23 @@ const analyze =  async() => {
                     const tokenADexBalance = await tokenAInterface.methods.balanceOf(dexAddress).call();
 
                     const amountIn = Math.floor(Math.random() * Math.min(tokenAUserBalance, tokenADexBalance * 0.1));
+
+                    const spotPrice = await dexInterface.methods.reserveRatio().call()/10**18;
+                    const previousTokenBBalance = await tokenBInterface.methods.balanceOf(user).call();
                     await swap(user, dexInterface, tokenAInterface, tokenBInterface, amountIn, 0);
+                    const newTokenBBalance = await tokenBInterface.methods.balanceOf(user).call();
+                    slippage = (((newTokenBBalance-previousTokenBBalance)/amountIn - spotPrice) / spotPrice) * 100;
                 } else {
                     const tokenBUserBalance = await tokenBInterface.methods.balanceOf(user).call();
                     const tokenBDexBalance = await tokenBInterface.methods.balanceOf(dexAddress).call();
 
                     const amountIn = Math.floor(Math.random() * Math.min(tokenBUserBalance, tokenBDexBalance * 0.1));
+
+                    const spotPrice = await dexInterface.methods.reserveRatio().call()/10**18;
+                    const previousTokenABalance = await tokenAInterface.methods.balanceOf(user).call();
                     await swap(user, dexInterface, tokenAInterface, tokenBInterface, amountIn, 1);
+                    const newTokenABalance = await tokenAInterface.methods.balanceOf(user).call();
+                    slippage = (((newTokenABalance-previousTokenABalance)/amountIn - spotPrice) / spotPrice) * 100;
                 }
 
             } else if (operationType === operationTypes.deposit) {
@@ -153,7 +173,19 @@ const analyze =  async() => {
                 const amount = Math.floor(Math.random() * LPTokenBalance);
                 await withdraw(LP, dexInterface, amount);
             }
-                
+            
+            const lpTokenDistribution = await Promise.all(LPs.map(async lp => String("\t") + String(lp) + " : " + (await lpTokenInterface.methods.balanceOf(lp).call())));
+
+            
+            console.log("--------------------------------");
+            console.log("Liquidity", "\tTotal Value Locked (TVL): " + (await dexInterface.methods.getTokenABalance().call()) + " A, " + (await dexInterface.methods.getTokenBBalance().call()) + " B", "\tReserve Ratio: " + (await dexInterface.methods.reserveRatio().call())/10**18, "\tLP Token Distribution: " + lpTokenDistribution.join("\n\t\t\t\t"));
+            console.log("--------------------------------");
+            
+            console.log("Trading Activity", "\tTrading Volume: Token A: " + tokenATradingVolume + ", Token B: " + tokenBTradingVolume, "\tTrading Fee: Token A: " + tokenAFeeCollected + ", Token B: " + tokenBFeeCollected);
+            console.log("--------------------------------");
+            
+            console.log("Price Dynamics", "\tSpot Price: " + (await dexInterface.methods.reserveRatio().call())/10**18, "\tSlippage: " + slippage);
+            console.log("--------------------------------");
         }
 
     } catch (err){

@@ -79,6 +79,10 @@ contract DEX {
         return (amt1 * getTokenBBalance()) / getTokenABalance() == amt2;
     }
 
+    function reserveRatio() public view returns (uint256) {
+        return (reserve1 * 10**18) / reserve2;
+    }
+
     function depositTokens(uint256 amt1, uint256 amt2) public {
         if (amt1 == 0 || amt2 == 0) {
             return;
@@ -118,7 +122,7 @@ contract DEX {
 
     function swap(string memory token , uint256 amount) public {
         address sender = msg.sender;
-        uint256 newTransferAmount = (amount * 97)/100;
+        uint256 newTransferAmount = (amount * 997)/100;
         if ( keccak256(abi.encodePacked(token)) == keccak256(abi.encodePacked("TokenA")) ) {
             uint256 newAmountA = getTokenABalance() + newTransferAmount;
             uint256 newAmountB = (getTokenABalance() * getTokenBBalance()) / newAmountA;
