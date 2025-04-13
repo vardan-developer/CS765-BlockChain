@@ -4,6 +4,7 @@ var tokenATradingVolume = 0;
 var tokenBTradingVolume = 0;
 var tokenAFeeCollected = 0;
 var tokenBFeeCollected = 0;
+const dataPoints = [];
 
 const deposit = async (LP, dexInterface, tokenAInterface, tokenBInterface, amountA, amountB, lpTokenInterface) => {
     await tokenAInterface.methods.approve(dexInterface.options.address, amountA).send({from : LP});
@@ -106,9 +107,23 @@ const analyze =  async() => {
             await tokenBInterface.methods.transfer(LP, 100000000).send({from : dexOwner});
         }
 
+        dataPoints.push({
+            iteration: 0,
+            totalValueLockedA: (await dexInterface.methods.getTokenABalance().call()),
+            totalValueLockedB: (await dexInterface.methods.getTokenBBalance().call()),
+            lpTokenDistribution: Object.fromEntries(await Promise.all(LPs.map(async lp => [lp, await lpTokenInterface.methods.balanceOf(lp).call()]))),
+            reserveRatio: (await dexInterface.methods.reserveRatio().call())/10**18,
+            tokenATradingVolume: 0,
+            tokenBTradingVolume: 0,
+            tokenAFeeCollected: 0,
+            tokenBFeeCollected: 0,
+            spotPrice: (await dexInterface.methods.reserveRatio().call())/10**18,
+            slippage: 0
+        });
+
         const operationTypes = {"swap": 0, "deposit": 1, "withdraw": 2};
 
-        for (let i = 0; i < N; i++) {
+        for (let i = 1; i <= N; i++) {
             let slippage = null;
             const operationType = Math.floor(Math.random() * 3);
             
@@ -186,11 +201,29 @@ const analyze =  async() => {
             
             console.log("Price Dynamics", "\tSpot Price: " + (await dexInterface.methods.reserveRatio().call())/10**18, "\tSlippage: " + slippage);
             console.log("--------------------------------");
+
+
+            dataPoints.push({
+                iteration: i,
+                totalValueLockedA: (await dexInterface.methods.getTokenABalance().call()),
+                totalValueLockedB: (await dexInterface.methods.getTokenBBalance().call()),
+                lpTokenDistribution: Object.fromEntries(await Promise.all(LPs.map(async lp => [lp, await lpTokenInterface.methods.balanceOf(lp).call()]))),
+                reserveRatio: (await dexInterface.methods.reserveRatio().call())/10**18,
+                tokenATradingVolume,
+                tokenBTradingVolume,
+                tokenAFeeCollected,
+                tokenBFeeCollected,
+                spotPrice: (await dexInterface.methods.reserveRatio().call())/10**18,
+                slippage
+            });
         }
 
     } catch (err){
         console.error(err)
     } finally{
+        console.log("DATA_POINTS_JSON_START");
+        console.log(JSON.stringify(dataPoints));
+        console.log("DATA_POINTS_JSON_END");
         process.exit(0);
     }
 }
