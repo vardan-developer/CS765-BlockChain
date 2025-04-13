@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-
-contract LPToken {
-    string constant name = "LPToken";
-    string constant symbol = "LPT";
+contract LPToken is ERC20{
     address internal DexAddr;
     uint256 internal totalTokens = 0;
     mapping (address => uint256) internal _balance;
 
-    constructor(address DEXAddr){
+    constructor(address DEXAddr) ERC20("LPToken", "LPT") {
         DexAddr = DEXAddr;
     }
 
@@ -21,7 +19,7 @@ contract LPToken {
         return _balance[receiver];
     }
 
-    function balanceOf(address account) public view returns (uint256){
+    function balanceOf(address account) override public view returns (uint256){
        return _balance[account];
     }
 
