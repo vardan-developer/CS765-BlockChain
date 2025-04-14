@@ -122,9 +122,9 @@ contract DEX {
 
     function spotPrice(string memory token) public view returns (uint256) {
         if(keccak256(abi.encodePacked(token)) == keccak256(abi.encodePacked("TokenA"))){
-            return (reserve2 * 10**18) / reserve1;
+            return (getTokenBBalance() * 10**18) / getTokenABalance();
         } else if(keccak256(abi.encodePacked(token)) == keccak256(abi.encodePacked("TokenB"))){
-            return (reserve1 * 10**18) / reserve2;
+            return (getTokenABalance() * 10**18) / getTokenBBalance();
         }
         return 0;
     }
