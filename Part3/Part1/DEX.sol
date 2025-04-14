@@ -46,7 +46,7 @@ contract DEX {
         return getGCD(b, a % b);
     }
     
-    function setLPTokenAddress(address _LPTokens) public{ 
+    function setLPTokenAddress(address _LPTokens) public { 
         if(msg.sender != owner){return;}
         LPTokens = _LPTokens;
     }
@@ -120,9 +120,22 @@ contract DEX {
         return (0,0);
     }
 
-    function swap(string memory token , uint256 amount) public {
+    function spotPrice(string memory token) public view returns (uint256) {
+        if(keccak256(abi.encodePacked(token)) == keccak256(abi.encodePacked("TokenA"))){
+            return (reserve2 * 10**18) / reserve1;
+        } else if(keccak256(abi.encodePacked(token)) == keccak256(abi.encodePacked("TokenB"))){
+            return (reserve1 * 10**18) / reserve2;
+        }
+        return 0;
+    }
+
+    function getCallerBalance() external view returns (uint256, uint256) {
+        return (IERC20(tokenA).balanceOf(msg.sender), IERC20(tokenB).balanceOf(msg.sender));
+    }
+
+    function swap(string memory token , uint256 amount) public returns (uint256) {
         address sender = msg.sender;
-        uint256 newTransferAmount = (amount * 997)/100;
+        uint256 newTransferAmount = (amount * 997)/1000;
         if ( keccak256(abi.encodePacked(token)) == keccak256(abi.encodePacked("TokenA")) ) {
             uint256 newAmountA = getTokenABalance() + newTransferAmount;
             uint256 newAmountB = (getTokenABalance() * getTokenBBalance()) / newAmountA;
@@ -131,6 +144,7 @@ contract DEX {
             reserve2 = newAmountB;
             IERC20(tokenA).transferFrom(sender, address(this), amount);
             IERC20(tokenB).transfer(sender, transferAmountB);
+            return transferAmountB;
         } else if ( keccak256(abi.encodePacked(token)) == keccak256(abi.encodePacked("TokenB")) ) {
             uint256 newAmountB = getTokenBBalance() + newTransferAmount;
             uint256 newAmountA = (getTokenABalance() * getTokenBBalance()) / newAmountB;
@@ -139,8 +153,9 @@ contract DEX {
             reserve2 = newAmountB;
             IERC20(tokenA).transfer(sender, transferAmountA);
             IERC20(tokenB).transferFrom(sender, address(this), amount);
+            return transferAmountA;
         } else {
-            return;
+            return 0;
         }   
     }
 }
