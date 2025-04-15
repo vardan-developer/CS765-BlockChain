@@ -70,18 +70,18 @@ contract Arbitrage {
     function getArbitrargeProfit(address _dex1, address _dex2, bool ABA) internal returns (uint256) {
         
         if (ABA) {
-            uint256 spotPriceA1 = DEX_Interface(_dex1).spotPrice("TokenA")*(1000-fee)/1000;
-            uint256 spotPriceB2 = DEX_Interface(_dex2).spotPrice("TokenB")*(1000-fee)/1000;
+            uint256 spotPriceA1 = (DEX_Interface(_dex1).spotPrice("TokenA")*(1000-fee))/1000;
+            uint256 spotPriceB2 = (DEX_Interface(_dex2).spotPrice("TokenB")*(1000-fee))/1000;
             uint256 initialTokenA = 1*10**18;
-            uint256 finalTokenA = spotPriceA1*spotPriceB2/(10**18);
+            uint256 finalTokenA = (spotPriceA1*spotPriceB2)/(10**18);
             if(finalTokenA < initialTokenA) return 0;
             uint256 arbitrageProfit = finalTokenA - initialTokenA;
             return arbitrageProfit;
         } else {
-            uint256 spotPriceB1 = DEX_Interface(_dex1).spotPrice("TokenB")*(1000-fee)/1000;
-            uint256 spotPriceA2 = DEX_Interface(_dex2).spotPrice("TokenA")*(1000-fee)/1000;
+            uint256 spotPriceB1 = (DEX_Interface(_dex1).spotPrice("TokenB")*(1000-fee))/1000;
+            uint256 spotPriceA2 = (DEX_Interface(_dex2).spotPrice("TokenA")*(1000-fee))/1000;
             uint256 initialTokenB = 1*10**18;
-            uint256 finalTokenB = spotPriceB1*spotPriceA2/(10**18);
+            uint256 finalTokenB = (spotPriceB1*spotPriceA2)/(10**18);
             if(finalTokenB < initialTokenB) return 0;
             uint256 arbitrageProfit = finalTokenB - initialTokenB;
             return arbitrageProfit;
@@ -104,7 +104,10 @@ contract Arbitrage {
         uint256 spotPriceA1 = DEX_Interface(DEX1).spotPrice("TokenA");
         uint256 spotPriceA2 = DEX_Interface(DEX2).spotPrice("TokenA");
         
-        if (spotPriceA1 == spotPriceA2) return (0,0, "No arbitrage opportunity");
+        if (spotPriceA1 == spotPriceA2) {
+            emit Log("No arbitrage opportunity");
+            return (0,0, "No arbitrage opportunity");
+        }
         if (spotPriceA1 < spotPriceA2) {
             address tmp = DEX1;
             DEX1 = DEX2;
@@ -113,7 +116,10 @@ contract Arbitrage {
         
         uint256 profitABA = getArbitrargeProfit(DEX1, DEX2, true); // returns the profit if we do arbitrage in terms of token A
         uint256 profitBAB = getArbitrargeProfit(DEX2, DEX1, false); // returns the profit if we do arbitrage in terms of token B
-        if(profitABA < threshold && profitBAB < threshold) return (0,0, "No arbitrage opportunity");
+        if(profitABA < threshold && profitBAB < threshold) {
+            emit Log("No arbitrage opportunity");
+            return (0,0, "No arbitrage opportunity");
+        }
         if(profitABA < threshold) profitABA = 0;
         if(profitBAB < threshold) profitBAB = 0;
 
@@ -123,19 +129,32 @@ contract Arbitrage {
         uint256 profitABAinTermsB = maxBperA*profitABA / 10**18;
         uint256 profitBABinTermsA = maxAperB*profitBAB / 10**18;
 
+        emit LogInt(profitABA);
+        emit LogInt(profitBABinTermsA);
+
+        emit LogInt(profitBAB);
+        emit LogInt(profitABAinTermsB);
+
         if(profitABA > profitBABinTermsA) {
             
             uint256 receivedB = DEX_Interface(DEX1).swap("TokenA", 1*10**18);
             uint256 receivedA = DEX_Interface(DEX2).swap("TokenB", receivedB);
             uint256 profit = receivedA - 1*10**18;
+            emit LogInt(1*10**18);
+            emit LogInt(profit);
+            emit Log("TokenA");
             return (1*10**18, profit, "TokenA");
 
         } else if(profitBAB >= profitABAinTermsB) {
             uint256 receivedA = DEX_Interface(DEX2).swap("TokenB", 1*10**18);
             uint256 receivedB = DEX_Interface(DEX1).swap("TokenA", receivedA);
             uint256 profit = receivedB - 1*10**18;
+            emit LogInt(1*10**18);
+            emit LogInt(profit);
+            emit Log("TokenB");
             return (profit, 1*10**18, "TokenB");
         } else {
+            emit Log("No arbitrage opportunity");
             return (0,0, "No arbitrage opportunity");
         }
     }
