@@ -1,14 +1,9 @@
 const { ethers } = require("hardhat");
 
 const deposit = async (LP, dexInterface, tokenAInterface, tokenBInterface, amountA, amountB, lpTokenInterface) => {
-    console.log("A: " + amountA + " " + await tokenAInterface.methods.balanceOf(LP).call());
-    if (amountA > (await tokenAInterface.methods.balanceOf(LP).call())) console.log("Panic A");
-    console.log("B: " + amountB + " " + await tokenBInterface.methods.balanceOf(LP).call());
-    if (amountB > (await tokenBInterface.methods.balanceOf(LP).call())) console.log("Panic B");
 
     await tokenAInterface.methods.approve(dexInterface.options.address, amountA).send({from : LP});
     await tokenBInterface.methods.approve(dexInterface.options.address, amountB).send({from : LP});
-    console.log("Approved By " + LP)
     await dexInterface.methods.depositTokens(ethers.BigNumber.from(String(amountA)), ethers.BigNumber.from(String(amountB))).send({from : LP});
     console.log("LP Token Balance: " + await lpTokenInterface.methods.balanceOf(LP).call());
     console.log("Deposit " + "LP:" + LP + ", amountA:" + amountA + ", amountB:" + amountB);
@@ -104,16 +99,6 @@ const profitableArbitrage = async () => {
         const arbitrageInterface = new web3.eth.Contract(arbitrageABI, arbitrageAddress);
         const tokenAInterface = new web3.eth.Contract(myTokenABI, tokenAAddress);
         const tokenBInterface = new web3.eth.Contract(myTokenABI, tokenBAddress);
-
-
-        console.log("TokenA: " + tokenAAddress);
-        console.log("TokenB: " + tokenBAddress);
-        console.log("DEXA: " + dexAAddress);
-        console.log("DEXB: " + dexBAddress);
-        console.log("LPTokenA: " + lpTokenAAddress);
-        console.log("LPTokenB: " + lpTokenBAddress);
-        console.log("Arbitrage: " + arbitrageAddress);
-
         
         const accounts = await web3.eth.getAccounts();
         const owner = accounts[0];
@@ -142,15 +127,9 @@ const profitableArbitrage = async () => {
             await deposit(user, dexBInterface, tokenAInterface, tokenBInterface, ethers.utils.parseEther("500"), ethers.utils.parseEther("1000"), lpTokenBInterface);
         }
 
-        // for (const user of swap_users) {
-        //     await swap(user, dexAInterface, tokenAInterface, tokenBInterface, ethers.utils.parseEther("100"), 0);
-        //     await swap(user, dexBInterface, tokenAInterface, tokenBInterface, ethers.utils.parseEther("50"), 1);
-        // }
-
         const data = await arbitrageInterface.methods.arbitrage().send({from: owner});
-        console.log(data.events)
-        // const [amountTradedA, amountTradedB, message] = Object.values(data);
-        // console.log("Arbitrage: " + amountTradedA + " " + amountTradedB + " " + message);
+        const result = data.events.ArbitrageResult.returnValues;
+        console.log(result.tokenType + " Used: " + result.amount + ", Profit: " + result.profit);
     } catch (error) {
         console.error("Error: " + error);
     }
@@ -175,7 +154,7 @@ const unprofitableArbitrage = async () => {
         const dexAAddress = dexA.address;
 
         const DEXB = await ethers.getContractFactory("DEX");
-        const dexB = await DEXB.deploy(tokenBAddress, tokenAAddress);
+        const dexB = await DEXB.deploy(tokenAAddress, tokenBAddress);
         await dexB.deployed();
         const dexBAddress = dexB.address;
 
@@ -229,38 +208,37 @@ const unprofitableArbitrage = async () => {
         const arbitrageInterface = new web3.eth.Contract(arbitrageABI, arbitrageAddress);
         const tokenAInterface = new web3.eth.Contract(myTokenABI, tokenAAddress);
         const tokenBInterface = new web3.eth.Contract(myTokenABI, tokenBAddress);
-
+        
         const accounts = await web3.eth.getAccounts();
         const owner = accounts[0];
         const lp_users = accounts.slice(1, 6);
         const swap_users = accounts.slice(6, 14);
+
+        await dexAInterface.methods.setLPTokenAddress(lpTokenAAddress).send({from : owner});
+        await dexBInterface.methods.setLPTokenAddress(lpTokenBAddress).send({from : owner});
         
-        for (const user of lp_users) {
+        for (const user of swap_users) {
             await tokenAInterface.methods.transfer(user, ethers.utils.parseEther("1000")).send({from : owner});
             await tokenBInterface.methods.transfer(user, ethers.utils.parseEther("1000")).send({from : owner});
         }
         
         for (const LP of lp_users) {
-            await tokenAInterface.methods.transfer(LP, ethers.utils.parseEther("1000")).send({from : owner});
-            await tokenBInterface.methods.transfer(LP, ethers.utils.parseEther("1000")).send({from : owner});
+            await tokenAInterface.methods.transfer(LP, ethers.utils.parseEther("10000")).send({from : owner});
+            await tokenBInterface.methods.transfer(LP, ethers.utils.parseEther("10000")).send({from : owner});
         }
 
         await tokenAInterface.methods.transfer(arbitrageAddress, ethers.utils.parseEther("1000")).send({from : owner});
         await tokenBInterface.methods.transfer(arbitrageAddress, ethers.utils.parseEther("1000")).send({from : owner});
 
+
         for (const user of lp_users) {
             await deposit(user, dexAInterface, tokenAInterface, tokenBInterface, ethers.utils.parseEther("1000"), ethers.utils.parseEther("1000"), lpTokenAInterface);
-            await deposit(user, dexBInterface, tokenAInterface, tokenBInterface, ethers.utils.parseEther("1000"), ethers.utils.parseEther("1000"), lpTokenBInterface);
+            await deposit(user, dexBInterface, tokenAInterface, tokenBInterface, ethers.utils.parseEther("1002"), ethers.utils.parseEther("1000"), lpTokenBInterface);
         }
 
-        for (const user of swap_users) {
-            await swap(user, dexAInterface, tokenAInterface, tokenBInterface, ethers.utils.parseEther("100"), 0);
-            await swap(user, dexBInterface, tokenAInterface, tokenBInterface, ethers.utils.parseEther("50"), 1);
-        }
-
-        const data = await arbitrageInterface.methods.arbitrage().send();
-        const [amountTradedA, amountTradedB, message] = Object.values(data);
-        console.log("Arbitrage: " + amountTradedA + " " + amountTradedB + " " + message);
+        const data = await arbitrageInterface.methods.arbitrage().send({from: owner});
+        const result = data.events.ArbitrageResult.returnValues;
+        console.log(result.tokenType + " Used: " + result.amount + ", Profit: " + result.profit);
     } catch (error) {
         console.error("Error: " + error);
     }

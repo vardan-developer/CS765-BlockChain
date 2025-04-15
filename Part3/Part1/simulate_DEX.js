@@ -109,8 +109,8 @@ const analyze =  async() => {
 
         dataPoints.push({
             iteration: 0,
-            totalValueLockedA: (await dexInterface.methods.getTokenABalance().call()),
-            totalValueLockedB: (await dexInterface.methods.getTokenBBalance().call()),
+            totalValueLockedA: 2 * (await dexInterface.methods.getTokenABalance().call()),
+            totalValueLockedB: 2 * (await dexInterface.methods.getTokenBBalance().call()),
             lpTokenDistribution: Object.fromEntries(await Promise.all(LPs.map(async lp => [lp, await lpTokenInterface.methods.balanceOf(lp).call()]))),
             reserveRatio: (await dexInterface.methods.reserveRatio().call())/10**18,
             tokenATradingVolume: 0,
@@ -205,8 +205,8 @@ const analyze =  async() => {
 
             dataPoints.push({
                 iteration: i,
-                totalValueLockedA: (await dexInterface.methods.getTokenABalance().call()),
-                totalValueLockedB: (await dexInterface.methods.getTokenBBalance().call()),
+                totalValueLockedA: 2 * (await dexInterface.methods.getTokenABalance().call()),
+                totalValueLockedB: 2 * (await dexInterface.methods.getTokenBBalance().call()),
                 lpTokenDistribution: Object.fromEntries(await Promise.all(LPs.map(async lp => [lp, await lpTokenInterface.methods.balanceOf(lp).call()]))),
                 reserveRatio: (await dexInterface.methods.reserveRatio().call())/10**18,
                 tokenATradingVolume,

@@ -34,6 +34,7 @@ contract Arbitrage {
     event Log(string message);
     event LogInt(uint value);
     event LogAddress(address addr);
+    event ArbitrageResult(uint256 amount, uint256 profit, string tokenType);
 
     constructor(address _dex1, address _dex2) {
         DEX1 = _dex1;
@@ -100,13 +101,13 @@ contract Arbitrage {
         }
     }
 
-    function arbitrage() external returns (uint256, uint256, string memory) {
+    function arbitrage() external {
         uint256 spotPriceA1 = DEX_Interface(DEX1).spotPrice("TokenA");
         uint256 spotPriceA2 = DEX_Interface(DEX2).spotPrice("TokenA");
         
         if (spotPriceA1 == spotPriceA2) {
-            emit Log("No arbitrage opportunity");
-            return (0,0, "No arbitrage opportunity");
+            emit ArbitrageResult(0, 0, "No arbitrage opportunity");
+            return;
         }
         if (spotPriceA1 < spotPriceA2) {
             address tmp = DEX1;
@@ -117,8 +118,8 @@ contract Arbitrage {
         uint256 profitABA = getArbitrargeProfit(DEX1, DEX2, true); // returns the profit if we do arbitrage in terms of token A
         uint256 profitBAB = getArbitrargeProfit(DEX2, DEX1, false); // returns the profit if we do arbitrage in terms of token B
         if(profitABA < threshold && profitBAB < threshold) {
-            emit Log("No arbitrage opportunity");
-            return (0,0, "No arbitrage opportunity");
+            emit ArbitrageResult(0, 0, "No arbitrage opportunity");
+            return;
         }
         if(profitABA < threshold) profitABA = 0;
         if(profitBAB < threshold) profitBAB = 0;
@@ -129,33 +130,26 @@ contract Arbitrage {
         uint256 profitABAinTermsB = maxBperA*profitABA / 10**18;
         uint256 profitBABinTermsA = maxAperB*profitBAB / 10**18;
 
-        emit LogInt(profitABA);
-        emit LogInt(profitBABinTermsA);
-
-        emit LogInt(profitBAB);
-        emit LogInt(profitABAinTermsB);
-
-        if(profitABA > profitBABinTermsA) {
-            
+        if(profitABA >= profitBABinTermsA) {
+            IERC20(tokenA).approve(DEX1, 1*10**18);
             uint256 receivedB = DEX_Interface(DEX1).swap("TokenA", 1*10**18);
+            IERC20(tokenB).approve(DEX2, receivedB);
             uint256 receivedA = DEX_Interface(DEX2).swap("TokenB", receivedB);
             uint256 profit = receivedA - 1*10**18;
-            emit LogInt(1*10**18);
-            emit LogInt(profit);
-            emit Log("TokenA");
-            return (1*10**18, profit, "TokenA");
+            emit ArbitrageResult(1*10**18, profit, "TokenA");
+            return;
 
         } else if(profitBAB >= profitABAinTermsB) {
+            IERC20(tokenB).approve(DEX2, 1*10**18);
             uint256 receivedA = DEX_Interface(DEX2).swap("TokenB", 1*10**18);
+            IERC20(tokenA).approve(DEX1, receivedA);
             uint256 receivedB = DEX_Interface(DEX1).swap("TokenA", receivedA);
             uint256 profit = receivedB - 1*10**18;
-            emit LogInt(1*10**18);
-            emit LogInt(profit);
-            emit Log("TokenB");
-            return (profit, 1*10**18, "TokenB");
+            emit ArbitrageResult(1*10**18, profit, "TokenB");
+            return;
         } else {
-            emit Log("No arbitrage opportunity");
-            return (0,0, "No arbitrage opportunity");
+            emit ArbitrageResult(0, 0, "No arbitrage opportunity");
+            return;
         }
     }
 }
