@@ -127,11 +127,12 @@ def plot_slippage(data_points):
     """Plot slippage over time."""
     iterations = [dp['iteration'] for dp in data_points]
     slippage = [dp['slippage'] if dp['slippage'] is not None else 0 for dp in data_points]
+    slippage = [slippage[i] for i in range(len(slippage)) if slippage[i] != 0]
     
     plt.figure(figsize=(10, 6))
-    plt.plot(iterations, slippage, markersize=3)
+    plt.plot(range(len(slippage)), slippage, markersize=3)
     plt.axhline(y=0, color='r', linestyle='--', alpha=0.5)
-    plt.xlabel('Iteration')
+    plt.xlabel('Swap Iteration')
     plt.ylabel('Slippage (%)')
     plt.title('Slippage Over Time')
     plt.grid(True)

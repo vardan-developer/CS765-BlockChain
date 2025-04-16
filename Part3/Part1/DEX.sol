@@ -151,8 +151,8 @@ contract DEX {
             uint256 transferAmountA = getTokenABalance() - newAmountA;
             reserve1 = newAmountA;
             reserve2 = newAmountB;
-            IERC20(tokenA).transfer(sender, transferAmountA);
             IERC20(tokenB).transferFrom(sender, address(this), amount);
+            IERC20(tokenA).transfer(sender, transferAmountA);
             return transferAmountA;
         } else {
             return 0;

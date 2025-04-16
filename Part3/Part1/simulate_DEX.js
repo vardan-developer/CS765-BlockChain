@@ -17,13 +17,13 @@ const deposit = async (LP, dexInterface, tokenAInterface, tokenBInterface, amoun
 const swap = async (user, dexInterface, tokenAInterface, tokenBInterface, amountIn, tokenIn) => {
     if (tokenIn === 0) {
         tokenATradingVolume += amountIn;
-        tokenAFeeCollected += (amountIn * 3) / 100;
+        tokenAFeeCollected += (amountIn * 3) / 1000;
         await tokenAInterface.methods.approve(dexInterface.options.address, amountIn).send({from : user});
         await dexInterface.methods.swap("TokenA", amountIn).send({from : user});
         console.log("Swap " + "user:" + user + ", TokenA amountIn:" + amountIn);
     } else {
         tokenBTradingVolume += amountIn;
-        tokenBFeeCollected += (amountIn * 3) / 100;
+        tokenBFeeCollected += (amountIn * 3) / 1000;
         await tokenBInterface.methods.approve(dexInterface.options.address, amountIn).send({from : user});
         await dexInterface.methods.swap("TokenB", amountIn).send({from : user});
         console.log("Swap " + "user:" + user + ", TokenB amountIn:" + amountIn);
@@ -112,12 +112,12 @@ const analyze =  async() => {
             totalValueLockedA: 2 * (await dexInterface.methods.getTokenABalance().call()),
             totalValueLockedB: 2 * (await dexInterface.methods.getTokenBBalance().call()),
             lpTokenDistribution: Object.fromEntries(await Promise.all(LPs.map(async lp => [lp, await lpTokenInterface.methods.balanceOf(lp).call()]))),
-            reserveRatio: (await dexInterface.methods.reserveRatio().call())/10**18,
+            reserveRatio: (await dexInterface.methods.spotPrice("TokenA").call())/10**18,
             tokenATradingVolume: 0,
             tokenBTradingVolume: 0,
             tokenAFeeCollected: 0,
             tokenBFeeCollected: 0,
-            spotPrice: (await dexInterface.methods.reserveRatio().call())/10**18,
+            spotPrice: (await dexInterface.methods.spotPrice("TokenA").call())/10**18,
             slippage: 0
         });
 
@@ -137,22 +137,24 @@ const analyze =  async() => {
 
                     const amountIn = Math.floor(Math.random() * Math.min(tokenAUserBalance, tokenADexBalance * 0.1));
 
-                    const spotPrice = await dexInterface.methods.reserveRatio().call()/10**18;
+                    const spotPrice = await dexInterface.methods.spotPrice("TokenA").call()/10**18;
                     const previousTokenBBalance = await tokenBInterface.methods.balanceOf(user).call();
                     await swap(user, dexInterface, tokenAInterface, tokenBInterface, amountIn, 0);
                     const newTokenBBalance = await tokenBInterface.methods.balanceOf(user).call();
-                    slippage = (((newTokenBBalance-previousTokenBBalance)/amountIn - spotPrice) / spotPrice) * 100;
+                    slippage = (((newTokenBBalance - previousTokenBBalance) - spotPrice * amountIn ) * 100 ) / (spotPrice * amountIn);
+                    console.log(spotPrice, newTokenBBalance, previousTokenBBalance, newTokenBBalance - previousTokenBBalance, slippage);
                 } else {
                     const tokenBUserBalance = await tokenBInterface.methods.balanceOf(user).call();
                     const tokenBDexBalance = await tokenBInterface.methods.balanceOf(dexAddress).call();
 
                     const amountIn = Math.floor(Math.random() * Math.min(tokenBUserBalance, tokenBDexBalance * 0.1));
 
-                    const spotPrice = await dexInterface.methods.reserveRatio().call()/10**18;
+                    const spotPrice = await dexInterface.methods.spotPrice("TokenB").call()/10**18;
                     const previousTokenABalance = await tokenAInterface.methods.balanceOf(user).call();
                     await swap(user, dexInterface, tokenAInterface, tokenBInterface, amountIn, 1);
                     const newTokenABalance = await tokenAInterface.methods.balanceOf(user).call();
-                    slippage = (((newTokenABalance-previousTokenABalance)/amountIn - spotPrice) / spotPrice) * 100;
+                    slippage = (((newTokenABalance - previousTokenABalance) - spotPrice * amountIn ) * 100 ) / (spotPrice * amountIn);
+                    console.log(spotPrice, newTokenABalance, previousTokenABalance, newTokenABalance - previousTokenABalance, slippage);
                 }
 
             } else if (operationType === operationTypes.deposit) {
@@ -193,13 +195,13 @@ const analyze =  async() => {
 
             
             console.log("--------------------------------");
-            console.log("Liquidity", "\tTotal Value Locked (TVL): " + (await dexInterface.methods.getTokenABalance().call()) + " A, " + (await dexInterface.methods.getTokenBBalance().call()) + " B", "\tReserve Ratio: " + (await dexInterface.methods.reserveRatio().call())/10**18, "\tLP Token Distribution: " + lpTokenDistribution.join("\n\t\t\t\t"));
+            console.log("Liquidity", "\tTotal Value Locked (TVL): " + (await dexInterface.methods.getTokenABalance().call()) + " A, " + (await dexInterface.methods.getTokenBBalance().call()) + " B", "\tReserve Ratio: " + (await dexInterface.methods.spotPrice("TokenA").call())/10**18, "\tLP Token Distribution: " + lpTokenDistribution.join("\n\t\t\t\t"));
             console.log("--------------------------------");
             
             console.log("Trading Activity", "\tTrading Volume: Token A: " + tokenATradingVolume + ", Token B: " + tokenBTradingVolume, "\tTrading Fee: Token A: " + tokenAFeeCollected + ", Token B: " + tokenBFeeCollected);
             console.log("--------------------------------");
             
-            console.log("Price Dynamics", "\tSpot Price: " + (await dexInterface.methods.reserveRatio().call())/10**18, "\tSlippage: " + slippage);
+            console.log("Price Dynamics", "\tSpot Price: " + (await dexInterface.methods.spotPrice("TokenA").call())/10**18, "\tSlippage: " + slippage);
             console.log("--------------------------------");
 
 
@@ -208,12 +210,12 @@ const analyze =  async() => {
                 totalValueLockedA: 2 * (await dexInterface.methods.getTokenABalance().call()),
                 totalValueLockedB: 2 * (await dexInterface.methods.getTokenBBalance().call()),
                 lpTokenDistribution: Object.fromEntries(await Promise.all(LPs.map(async lp => [lp, await lpTokenInterface.methods.balanceOf(lp).call()]))),
-                reserveRatio: (await dexInterface.methods.reserveRatio().call())/10**18,
+                reserveRatio: (await dexInterface.methods.spotPrice("TokenA").call())/10**18,
                 tokenATradingVolume,
                 tokenBTradingVolume,
                 tokenAFeeCollected,
                 tokenBFeeCollected,
-                spotPrice: (await dexInterface.methods.reserveRatio().call())/10**18,
+                spotPrice: (await dexInterface.methods.spotPrice("TokenA").call())/10**18,
                 slippage
             });
         }
