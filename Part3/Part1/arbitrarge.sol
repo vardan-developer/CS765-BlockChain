@@ -13,7 +13,6 @@ interface IERC20 {
 interface DEX_Interface {
     function tokenA() external view returns (address);
     function tokenB() external view returns (address);
-    function reserveRatio() external view returns (uint256);
     function getTokenABalance() external view returns (uint256);
     function getTokenBBalance() external view returns (uint256);
     function depositTokens(uint256 amt1, uint256 amt2) external;
@@ -135,6 +134,10 @@ contract Arbitrage {
             uint256 receivedB = DEX_Interface(DEX1).swap("TokenA", 1*10**18);
             IERC20(tokenB).approve(DEX2, receivedB);
             uint256 receivedA = DEX_Interface(DEX2).swap("TokenB", receivedB);
+            if (receivedA < 1*10**18) {
+                emit ArbitrageResult(1*10**18, 0, "TokenA");
+                return;
+            }
             uint256 profit = receivedA - 1*10**18;
             emit ArbitrageResult(1*10**18, profit, "TokenA");
             return;
@@ -144,6 +147,10 @@ contract Arbitrage {
             uint256 receivedA = DEX_Interface(DEX2).swap("TokenB", 1*10**18);
             IERC20(tokenA).approve(DEX1, receivedA);
             uint256 receivedB = DEX_Interface(DEX1).swap("TokenA", receivedA);
+            if (receivedB < 1*10**18) {
+                emit ArbitrageResult(1*10**18, 0, "TokenB");
+                return;
+            }
             uint256 profit = receivedB - 1*10**18;
             emit ArbitrageResult(1*10**18, profit, "TokenB");
             return;

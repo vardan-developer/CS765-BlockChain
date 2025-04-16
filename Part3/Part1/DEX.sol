@@ -24,8 +24,6 @@ contract DEX {
     address public tokenB;
     address private LPTokens;
     address private owner;
-    uint256 internal reserve1;
-    uint256 internal reserve2;
     // Constructor to initialize the token addresses
     constructor(address _tokenA, address _tokenB) {
         require(_tokenA != address(0) && _tokenB != address(0), "Invalid token address");
@@ -51,12 +49,6 @@ contract DEX {
         LPTokens = _LPTokens;
     }
 
-    // simplify by dividing by gcd
-    function _simplify() internal {
-        reserve1 = reserve1 / getGCD(reserve1, reserve2);
-        reserve2 = reserve2 / getGCD(reserve1, reserve2);
-    }
-
     // Function to get the balance of tokenA held by the DEX contract
     function getTokenABalance() public view returns (uint256) {
         return IERC20(tokenA).balanceOf(getMyAddress());
@@ -79,10 +71,6 @@ contract DEX {
         return (amt1 * getTokenBBalance()) / getTokenABalance() == amt2;
     }
 
-    function reserveRatio() public view returns (uint256) {
-        return (reserve1 * 10**18) / reserve2;
-    }
-
     function depositTokens(uint256 amt1, uint256 amt2) public {
         if (amt1 == 0 || amt2 == 0) {
             return;
@@ -91,10 +79,7 @@ contract DEX {
         uint256 tokenABalance = getTokenABalance();
         uint256 tokenBBalance = getTokenBBalance();
         
-        if(tokenABalance == 0 && tokenBBalance == 0){
-            reserve1 = amt1;
-            reserve2 = amt2;
-        } else if(!isRatioClose(amt1, amt2)) {
+        if(!isRatioClose(amt1, amt2)) {
             return;
         }
 
@@ -140,8 +125,6 @@ contract DEX {
             uint256 newAmountA = getTokenABalance() + newTransferAmount;
             uint256 newAmountB = (getTokenABalance() * getTokenBBalance()) / newAmountA;
             uint256 transferAmountB = getTokenBBalance() - newAmountB;
-            reserve1 = newAmountA;
-            reserve2 = newAmountB;
             IERC20(tokenA).transferFrom(sender, address(this), amount);
             IERC20(tokenB).transfer(sender, transferAmountB);
             return transferAmountB;
@@ -149,8 +132,6 @@ contract DEX {
             uint256 newAmountB = getTokenBBalance() + newTransferAmount;
             uint256 newAmountA = (getTokenABalance() * getTokenBBalance()) / newAmountB;
             uint256 transferAmountA = getTokenABalance() - newAmountA;
-            reserve1 = newAmountA;
-            reserve2 = newAmountB;
             IERC20(tokenB).transferFrom(sender, address(this), amount);
             IERC20(tokenA).transfer(sender, transferAmountA);
             return transferAmountA;

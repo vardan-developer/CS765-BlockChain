@@ -127,7 +127,7 @@ const profitableArbitrage = async () => {
             await deposit(user, dexBInterface, tokenAInterface, tokenBInterface, ethers.utils.parseEther("500"), ethers.utils.parseEther("1000"), lpTokenBInterface);
         }
 
-        const data = await arbitrageInterface.methods.arbitrage().send({from: owner});
+        const data = await arbitrageInterface.methods.arbitrage().1({from: owner});
         const result = data.events.ArbitrageResult.returnValues;
         console.log(result.tokenType + " Used: " + result.amount + ", Profit: " + result.profit);
     } catch (error) {
